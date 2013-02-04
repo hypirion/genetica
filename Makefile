@@ -4,7 +4,7 @@
 	erlc -W $<
 
 ERL = erl -boot start_clean
-MODS = main conversions
+MODS = main conversions one_max
 
 all: compile
 
