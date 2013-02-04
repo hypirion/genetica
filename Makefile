@@ -11,4 +11,4 @@ all: compile
 compile: ${MODS:%=%.beam}
 
 purge:
-	-rm -rf *.beam erl_crash.dump
+	-rm -rf *.beam erl_crash.dump *~
