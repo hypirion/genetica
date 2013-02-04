@@ -1,23 +1,17 @@
 -module(main).
 -export([start/1]).
+-import(conversions, [bitstr_to_list/1, list_to_bitstr/1]).
 
 start([Name]) ->
-    io:format("~w~nHello ~s!~n",
-              [bitstr_to_list(atom_to_binary(Name, latin1)), Name]).
+    random:seed(now()),
+    Callme = fun() -> random:uniform(2) - 1 end,
+    Bitstring = list_to_bitstr(repeatedly(20, Callme)),
+    io:format("~w~nHello ~s!~n", [Bitstring, Name]).
 
-bitstr_to_list(<<N:1,Rest/bitstring>>) ->
-    [N | bitstr_to_list(Rest)];
-bitstr_to_list(<<>>) ->
-    [].
-
-list_to_bitstr(List) ->
-    list_to_bitstr(List, <<>>).
-
-list_to_bitstr([], Bitstr) ->
-    Bitstr;
-list_to_bitstr([H | T], Bitstr) ->
-    list_to_bitstr(T, <<Bitstr/bitstring, H:1>>).
-
+repeatedly(0, _) ->
+    [];
+repeatedly(N, Fun) ->
+    [Fun() | repeatedly(N - 1, Fun)].
 
 %% (1) choose a genetic representation
 %% (2) build a population
