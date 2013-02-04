@@ -10,6 +10,15 @@ bitstr_to_list(<<N:1,Rest/bitstring>>) ->
 bitstr_to_list(<<>>) ->
     [].
 
+list_to_bitstr(List) ->
+    list_to_bitstr(List, <<>>).
+
+list_to_bitstr([], Bitstr) ->
+    Bitstr;
+list_to_bitstr([H | T], Bitstr) ->
+    list_to_bitstr(T, <<Bitstr/bitstring, H:1>>).
+
+
 %% (1) choose a genetic representation
 %% (2) build a population
 %% (3) design a fitness function
