@@ -8,10 +8,6 @@ start([Name]) ->
     Bitstring = list_to_bitstr(repeatedly(20, Callme)),
     io:format("~w~nHello ~s!~n", [Bitstring, Name]).
 
-repeatedly(0, _) ->
-    [];
-repeatedly(N, Fun) ->
-    [Fun() | repeatedly(N - 1, Fun)].
 
 %% (1) choose a genetic representation
 %% (2) build a population
