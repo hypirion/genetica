@@ -3,7 +3,7 @@
 
 random_genotype_fn([N]) ->
     fun () ->
-            main:repeatedly(N, random_bit)
+            utils:repeatedly(N, fun random_bit/0)
     end.
 
 %% Utility fn
@@ -11,14 +11,10 @@ random_bit() ->
     random:uniform(2) - 1.
 
 genotype_to_phenotype_fn([_]) ->
-    fun (Geno) ->
-            conversions:list_to_bitstr(Geno)
-    end.
+    fun conversions:list_to_bitstr/1.
 
 phenotype_to_genotype_fn([_]) ->
-    fun (Pheno) ->
-            conversions:bitstr_to_list(Pheno)
-    end.
+    fun conversions:bitstr_to_list/1.
 
 evaluate_fitness_fn({phen_to_gen, F, init_vals, [N]}) ->
     fun (Pheno) ->

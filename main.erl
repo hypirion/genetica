@@ -4,9 +4,8 @@
 
 start([Name]) ->
     random:seed(now()),
-    Callme = fun() -> random:uniform(2) - 1 end,
-    Bitstring = list_to_bitstr(repeatedly(20, Callme)),
-    io:format("~w~nHello ~s!~n", [Bitstring, Name]).
+    Geno = (one_max:random_genotype_fn([20]))(),
+    io:format("~w~nHello ~s!~n", [Geno, Name]).
 
 
 %% (1) choose a genetic representation
