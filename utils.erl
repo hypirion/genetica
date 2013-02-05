@@ -4,4 +4,4 @@
 repeatedly(0, _) ->
     [];
 repeatedly(N, Fun) ->
-    [apply(Fun, []) | repeatedly(N - 1, Fun)].
+    [Fun() | repeatedly(N - 1, Fun)].
