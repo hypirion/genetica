@@ -1,5 +1,6 @@
 -module(utils).
--export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2]).
+-export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
+         comp/1]).
 
 repeatedly(0, _) ->
     [];
