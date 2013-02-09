@@ -4,7 +4,7 @@
 	erlc -W $<
 
 ERL = erl -boot start_clean
-MODS = main conversions one_max utils selection_protocols
+MODS = main conversions one_max utils selection_protocols selection_mechanisms
 
 all: compile
 
