@@ -9,16 +9,16 @@ assign_slots([{indiv, I, fitness, F} | T], N, Acc) ->
     With_slots = {indiv, I, fitness, F, slots, [N, N+F]},
     assign_slots(T, N + F, [With_slots | Acc]);
 assign_slots([], N, Acc) ->
-    {plist, Acc, total, N - 1}.
+    {plist, Acc, total, N}.
 
 
 in_interval_fn(V) ->
     fun ({indiv, _, fitness, _, slots, [Lower, Upper]}) ->
-            (Lower =< V) and (V < Upper)
+            (Lower < V) and (V =< Upper)
     end.
 
-%% Returns a zero-arity function returning the individual who won the current
-%% roulette. Multiple runs may return the same individual.
+%% Returns a zero-arity function returning the individual who won a single
+%% roulette run. Multiple runs may return the same individual.
 roulette_wheel_fn(Plist) ->
     {plist, Slotted, total, N} = assign_slots(Plist),
     fun () ->
