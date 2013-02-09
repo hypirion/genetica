@@ -14,7 +14,7 @@ assign_slots([], N, Acc) ->
 
 in_interval_fn(V) ->
     fun ({indiv, _, fitness, _, slots, [Lower, Upper]}) ->
-            (Lower < V) and (V =< Upper)
+            (Lower =< V) and (V < Upper)
     end.
 
 %% Returns a zero-arity function returning the individual who won a single
@@ -22,7 +22,7 @@ in_interval_fn(V) ->
 roulette_wheel_fn(Plist) ->
     {plist, Slotted, total, N} = assign_slots(Plist),
     fun () ->
-            Val = random:uniform(N),
+            Val = random:uniform()*N,
             {indiv, I,
              fitness, _,
              slots, _} = utils:ffilter(Slotted, in_interval_fn(Val)),
