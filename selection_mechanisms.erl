@@ -1,5 +1,5 @@
 -module(selection_mechanisms).
--export([roulette_wheel_fn/1]).
+-export([roulette_wheel_fn/1, sigma_scale/1]).
 
 %% Assigns slots to the different phenotypes based on their fitness values
 assign_slots(Plist) ->
@@ -29,9 +29,11 @@ roulette_wheel_fn(Plist) ->
             I
     end.
 
+fitness({indiv, _, fitness, F}) -> F.
+
 sigma_scale(Plist) ->
-    Fitnesses = lists:map(fun ({indiv, _, fitness, F}) -> F end, Plist),
+    Fitnesses = lists:map(fun fitness/1, Plist),
     Avg = utils:avg(Fitnesses),
-    Stddev = utils:std_dev(Fitnesses, Avg),
-    Scalefn = fun (i) -> 1 + (i - Avg)/(2 * Stddev) end,
+    Stddev = max(utils:std_dev(Fitnesses, Avg), 0.001),
+    Scalefn = fun (I) -> 1 + (I - Avg)/(2 * Stddev) end,
     lists:keymap(Scalefn, 4, Plist).
