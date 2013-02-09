@@ -28,3 +28,10 @@ roulette_wheel_fn(Plist) ->
              slots, _} = utils:ffilter(Slotted, in_interval_fn(Val)),
             I
     end.
+
+sigma_scale(Plist) ->
+    Fitnesses = lists:map(fun ({indiv, _, fitness, F}) -> F end, Plist),
+    Avg = utils:avg(Fitnesses),
+    Stddev = utils:std_dev(Fitnesses, Avg),
+    Scalefn = fun (i) -> 1 + (i - Avg)/(2 * Stddev) end,
+    lists:keymap(Scalefn, 4, Plist).
