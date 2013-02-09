@@ -38,3 +38,12 @@ ffilter([H | T], Pred) ->
         false -> ffilter(T, Pred)
     end;
 ffilter([] , _) -> nil.
+
+%% Returns fun (X) -> F1(F2(...(FN(X)))) end when given [F1, F2, ..., FN]
+comp([F]) ->
+    F;
+comp([F | T]) ->
+    G = comp(T),
+    fun (X) ->
+            F(G(X))
+    end.
