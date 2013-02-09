@@ -1,5 +1,5 @@
 -module(selection_mechanisms).
--export([roulette_wheel_fn/1, sigma_scale/1]).
+-export([roulette_wheel_fn/1, sigma_scale/1, boltzmann_scale/2]).
 
 %% Assigns slots to the different phenotypes based on their fitness values
 assign_slots(Plist) ->
@@ -37,3 +37,10 @@ sigma_scale(Plist) ->
     Stddev = max(utils:std_dev(Fitnesses, Avg), 0.001),
     Scalefn = fun (I) -> 1 + (I - Avg)/(2 * Stddev) end,
     lists:keymap(Scalefn, 4, Plist).
+
+boltzmann_scale(Plist, T) ->
+    Efit = lists:map(utils:comp([fun (F) -> math:exp(F/T) end,
+                                 fun fitness/1]), Plist),
+    Avg = utils:avg(Efit),
+    [{indiv, I, fitness, F / Avg} ||
+        {{indiv, I, fitness, _}, F} <- lists:zip(Plist, Efit)].
