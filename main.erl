@@ -6,6 +6,11 @@ start([Name]) ->
     random:seed(now()),
     Geno = (one_max:random_genotype_fn([20]))(),
     io:format("~w~nHello ~s!~n", [Geno, Name]).
+genetica_loop(0, Pop, Develop_and_select) ->
+    done;
+genetica_loop(Iters, Pop, Develop_and_select) ->
+    Newpop = Develop_and_select(Pop),
+    genetica_loop(Iters - 1, Newpop, Develop_and_select).
 
 fetch_fns(Module, Opts) ->
     Rand_gtype = Module:random_genotype_fn(Opts),
