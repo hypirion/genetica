@@ -13,15 +13,20 @@ phenotype_to_genotype_fn(_) ->
 genotype_to_phenotype_fn(_) ->
     fun conversions:bitstr_to_list/1.
 
-fitness_fn({init_vals, [N]}) ->
+fitness_fn([N | _]) ->
     fun ({indiv, {gtype, Geno}, others, _}) ->
             lists:sum(Geno) - 2*abs(N - bit_size(Geno))
     end.
-    
-crossover_fn(_) ->
-    fun (_G1, _G2) ->
-            1
+
+crossover(<<N1:1, G1/bitstring>>, <<N2:1, G2/bitstring>>) ->
+    {NG1, NG2} = crossover(G1, G2),
+    case utils:random_bit() of
+        0 -> {<<N1:1, NG1/bitstring>>, <<N2:1, NG2/bitstring>>};
+        1 -> {<<N2:1, NG1/bitstring>>, <<N1:1, NG2/bitstring>>}
     end.
+
+crossover_fn(_) ->
+    fun crossover/2.
 
 mutation_fn([P]) ->
     Rec = fun (F, <<N:1,Rest/bitstring>>) ->
