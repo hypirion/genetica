@@ -1,6 +1,6 @@
 -module(utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
-         comp/1]).
+         comp/1, shuffle/1]).
 
 repeatedly(0, _) ->
     [];
@@ -48,3 +48,7 @@ comp([F | T]) ->
     fun (X) ->
             F(G(X))
     end.
+
+%% Shuffles a list.
+shuffle(List) ->
+    [X || {_, X} <- lists:sort([{random:uniform(), X} || X <- List])].

@@ -1,5 +1,6 @@
 -module(selection_mechanisms).
--export([roulette_wheel_fn/1, sigma_scale/2, boltzmann_scale/2, rank_scale/2]).
+-export([roulette_wheel_fn/2, tournament_selection_fn/2,
+         sigma_scale/2, boltzmann_scale/2, rank_scale/2]).
 
 %% Assigns slots to the different phenotypes based on their fitness values
 assign_slots(Plist) ->
@@ -19,7 +20,7 @@ in_interval_fn(V) ->
 
 %% Returns a zero-arity function returning the individual who won a single
 %% roulette run. Multiple runs may return the same individual.
-roulette_wheel_fn(Plist) ->
+roulette_wheel_fn(Plist, _) ->
     {plist, Slotted, total, N} = assign_slots(Plist),
     fun () ->
             Val = random:uniform()*N,
@@ -29,7 +30,19 @@ roulette_wheel_fn(Plist) ->
             I
     end.
 
+%% Returns a zero-arity function returning the individual who won a tournament
+%% with K individuals. May return the same individual.
+tournament_selection_fn(Plist, [K]) ->
+    fun () ->
+            Randomized = utils:shuffle(Plist),
+            Firsts = lists:sublist(Randomized, K),
+            lists:last(lists:sort(fun fitness_sort/2, Firsts))
+    end.
+
 fitness({indiv, _, fitness, F}) -> F.
+
+fitness_sort({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
+                     F1 =< F2.
 
 sigma_scale(Plist, _) ->
     Fitnesses = lists:map(fun fitness/1, Plist),
@@ -50,9 +63,6 @@ rank_scale(Plist, _) ->
     Max = lists:max(Fitnesses),
     Min = lists:min(Fitnesses),
     N = length(Fitnesses),
-    Sortfn = fun ({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
-                     F1 =< F2
-             end,
     [{indiv, I, fitness, Min + (Max - Min)*(Index - 1)/(N - 1)} ||
         {{indiv, I, fitness, _}, Index} <-
-            lists:zip(lists:sort(Sortfn, Plist), lists:seq(1, N))].
+            lists:zip(lists:sort(fun fitness_sort/2, Plist), lists:seq(1, N))].
