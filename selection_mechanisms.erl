@@ -30,14 +30,27 @@ roulette_wheel_fn(Plist, _) ->
             I
     end.
 
+roulette_wheel(Plist, _) ->
+    {plist, Slotted, total, N} = assign_slots(Plist),
+    Val = random:uniform()*N,
+    {indiv, I,
+     fitness, _,
+     slots, _} = utils:ffilter(Slotted, in_interval_fn(Val)),
+    I.
+
 %% Returns a zero-arity function returning the individual who won a tournament
 %% with K individuals. May return the same individual.
-tournament_selection_fn(Plist, [K]) ->
+tournament_selection_fn(Plist, [K | _]) ->
     fun () ->
             Randomized = utils:shuffle(Plist),
             Firsts = lists:sublist(Randomized, K),
             lists:last(lists:sort(fun fitness_sort/2, Firsts))
     end.
+
+tournament_selection(Plist, [K | _]) ->
+    Randomized = utils:shuffle(Plist),
+    Firsts = lists:sublist(Randomized, K),
+    lists:last(lists:sort(fun fitness_sort/2, Firsts)).
 
 fitness({indiv, _, fitness, F}) -> F.
 
