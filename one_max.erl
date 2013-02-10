@@ -13,10 +13,9 @@ phenotype_to_genotype_fn(_) ->
 genotype_to_phenotype_fn(_) ->
     fun conversions:bitstr_to_list/1.
 
-fitness_fn({phen_to_gen, F, init_vals, [N]}) ->
-    fun ({ptype, Pheno, others, _}) ->
-            Geno = F(Pheno),
-            lists:sum(Geno) - 2*abs(N - bit_size(Pheno))
+fitness_fn({init_vals, [N]}) ->
+    fun ({indiv, {gtype, Geno}, others, _}) ->
+            lists:sum(Geno) - 2*abs(N - bit_size(Geno))
     end.
     
 crossover_fn(_) ->
