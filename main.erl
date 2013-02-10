@@ -7,6 +7,11 @@ start([Name]) ->
     Geno = (one_max:random_genotype_fn([20]))(),
     io:format("~w~nHello ~s!~n", [Geno, Name]).
 genetica_loop(0, Pop, Develop_and_select) ->
+
+generate_random_pop(Popcount, {rand, Rand_gtype, g_to_p, GtoP}) ->
+    [GtoP(Genome) || Genome <- utils:repeatedly(Popcount, Rand_gtype)].
+
+genetica_loop(0, _Pop, _Develop_and_select) ->
     done;
 genetica_loop(Iters, Pop, Develop_and_select) ->
     Newpop = Develop_and_select(Pop),
