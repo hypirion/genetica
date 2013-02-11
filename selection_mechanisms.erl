@@ -57,6 +57,10 @@ fitness({indiv, _, fitness, F}) -> F.
 fitness_sort({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
                      F1 =< F2.
 
+%% Do not do any scaling of the fitnesses.
+identity_scale(Plist, _) ->
+    Plist.
+
 sigma_scale(Plist, _) ->
     Fitnesses = lists:map(fun fitness/1, Plist),
     Avg = utils:avg(Fitnesses),
