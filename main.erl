@@ -28,7 +28,7 @@ start([AGenerations, APopcount, ASel_method, AK, AP,
     Initpop = generate_random_pop(Popcount, R, GP),
     Analyzefn = analyze_fn(only_fitness_fn(F)),
     Analyzefn(Initpop),
-    genetica_loop(Generations, Initpop, Analyzefn, Devel_and_select).
+    genetica_loop(Generations - 1, Initpop, Analyzefn, Devel_and_select).
 
 generate_random_pop(Popcount, Rand_gtype, GtoP) ->
     [GtoP(Genome) || Genome <- utils:repeatedly(Popcount, Rand_gtype)].
@@ -43,8 +43,9 @@ genetica_loop(Iters, Pop, Analyzefn, Develop_and_select) ->
 analyze_fn(Fitness_fn) ->
     fun (Pop) ->
             Fits = Fitness_fn(Pop),
-            Floats = [lists:min(Fits), utils:avg(Fits), lists:max(Fits)],
-            io:format("~w ~w ~w~n", Floats)
+            Floats = [utils:avg(Fits), utils:std_dev(Fits), lists:max(Fits),
+                      lists:min(Fits)],
+            io:format("~w ~w ~w ~w~n", Floats)
     end.
 
 add_fitness_fn(F, Scale) ->
