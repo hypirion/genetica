@@ -93,28 +93,28 @@ pick_best(Amount, Pop, Sel_method, Acc) ->
     pick_best(Amount - 1, Newpop, Sel_method, [I | Acc]).
 
 full_replacement_fn(Make_child, _, Add_fitness, [Popsize | _]) ->
-    fun (Pop) ->
-            FPop = Add_fitness(Pop),
+    fun (Pop, Scale_args) ->
+            FPop = Add_fitness(Pop, Scale_args),
             Make_child_from_pop = fun () -> Make_child(FPop) end,
             utils:repeatedly(Popsize, Make_child_from_pop)
     end.
 
 over_production_fn(Make_child, Selection_fn, Add_fitness, [Popsize, M | _]) ->
-    fun (Pop) ->
-            FPop = Add_fitness(Pop),
+    fun (Pop, Scale_args) ->
+            FPop = Add_fitness(Pop, Scale_args),
             Make_child_from_pop = fun () -> Make_child(FPop) end,
             Cpop = utils:repeatedly(Popsize + M, Make_child_from_pop),
-            FCpop = Add_fitness(Cpop),
+            FCpop = Add_fitness(Cpop, Scale_args),
             pick_best(Popsize, FCpop, Selection_fn)
     end.
 
 generational_mixing_fn(Make_child, Selection_fn, Add_fitness,
                        [Popsize, M | _]) ->
-    fun (Pop) ->
-            FPop = Add_fitness(Pop),
+    fun (Pop, Scale_args) ->
+            FPop = Add_fitness(Pop, Scale_args),
             Make_child_from_pop = fun () -> Make_child(FPop) end,
             Cpop = utils:repeatedly(Popsize, Make_child_from_pop),
-            FCpop = Add_fitness(Cpop),
+            FCpop = Add_fitness(Cpop, Scale_args),
             Cbest = pick_best(Popsize - M, FCpop, Selection_fn),
             Pbest = pick_best(M, FPop, Selection_fn),
             Cbest ++ Pbest

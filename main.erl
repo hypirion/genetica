@@ -9,7 +9,6 @@ start([APopcount, ASel_method, AK, AP,
        AEval_method, AProtocol, AM, Module | T]) ->
     %% Make run truly random
     random:seed(now()),
-    io:format("hello?~n"),
     %% Argument parsing from here on
     [Popcount, K, M] = [atom_to_integer(X) || X <- [APopcount, AK, AM]],
     P = atom_to_float(AP),
@@ -20,15 +19,15 @@ start([APopcount, ASel_method, AK, AP,
     {rand, R, p_to_g, PG, g_to_p, GP,
      fitness, F, cross, C, mut, Mut} = fetch_fns(Module, Module:parse_args(T)),
     %% Parsing done
-    Fitness = add_fitness_fn(F),
+    Fitness = add_fitness_fn(F, fun selection:Eval_method/2),
     Sel_method = selection:Sel_metfn([K, P]),
     Make_child = make_child_fn(Sel_method, C, Mut, PG, GP),
     Devel_and_select = selection:Protocol(Make_child, Sel_method, 
-                                          Fitness, [Popcount, K]),
+                                          Fitness, [Popcount, M]),
     Initpop = generate_random_pop(Popcount, R, GP),
     Analyzefn = analyze_fn(Fitness),
-    Analyzefn(Initpop),
-    genetica_loop(100, Initpop, Analyzefn, Devel_and_select).
+    Analyzefn(Initpop, []),
+    genetica_loop(1000, Initpop, Analyzefn, Devel_and_select).
 
 generate_random_pop(Popcount, Rand_gtype, GtoP) ->
     [GtoP(Genome) || Genome <- utils:repeatedly(Popcount, Rand_gtype)].
@@ -36,20 +35,21 @@ generate_random_pop(Popcount, Rand_gtype, GtoP) ->
 genetica_loop(0, _Pop, _Analyzefn, _Develop_and_select) ->
     done;
 genetica_loop(Iters, Pop, Analyzefn, Develop_and_select) ->
-    Newpop = Develop_and_select(Pop),
-    Analyzefn(Newpop),
+    Newpop = Develop_and_select(Pop, []),
+    Analyzefn(Newpop, []),
     genetica_loop(Iters - 1, Newpop, Analyzefn, Develop_and_select).
 
 analyze_fn(Fitness_fn) ->
-    fun (Pop) ->
-            Fits = [F || {indiv, _, fitness, F} <- Fitness_fn(Pop)],
+    fun (Pop, Scale_args) ->
+            Fits = [F || {indiv, _, fitness, F} <- Fitness_fn(Pop, Scale_args)],
             Floats = [lists:min(Fits), utils:avg(Fits), lists:max(Fits)],
             io:format("~w ~w ~w~n", Floats)
     end.
 
-add_fitness_fn(F) ->
-    fun (Pop) ->
-            [{indiv, I, fitness, F(I, Pop)} || I <- Pop]
+add_fitness_fn(F, Scale) ->
+    fun (Pop, Scale_args) ->
+            Unscaled = [{indiv, I, fitness, F(I, Pop)} || I <- Pop],
+            Scale(Unscaled, Scale_args)
     end.
 
 make_child_fn(Sel_method, Crossfn, Mutfn, PG, GP) ->
