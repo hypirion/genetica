@@ -48,7 +48,10 @@ tournament_selection_fn([K, P | _]) ->
 fitness({indiv, _, fitness, F}) -> F.
 
 fitness_sort({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
-                     F1 >= F2.
+    F1 >= F2.
+
+fitness_sort_asc({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
+    F1 =< F2.
 
 %% Fitness scaling
 
@@ -77,7 +80,8 @@ rank_scale(Plist, _) ->
     N = length(Fitnesses),
     [{indiv, I, fitness, Min + (Max - Min)*(Index - 1)/(N - 1)} ||
         {{indiv, I, fitness, _}, Index} <-
-            lists:zip(lists:sort(fun fitness_sort/2, Plist), lists:seq(1, N))].
+            lists:zip(lists:sort(fun fitness_sort_asc/2, Plist),
+                      lists:seq(1, N))].
 
 %% Selection protocols
 
