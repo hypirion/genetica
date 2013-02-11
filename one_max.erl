@@ -2,8 +2,9 @@
 -import(utils, [atom_to_integer/1, atom_to_float/1]).
 -compile(export_all). %% TODO: Remove when finished.
 
-parse_args([Bits, Mutprob, Mutrate | _]) ->
-    [atom_to_integer(Bits), atom_to_float(Mutprob), atom_to_float(Mutrate)].
+parse_args([Bits, Mutprob, Mutrate, What_crossover | _]) ->
+    [atom_to_integer(Bits), atom_to_float(Mutprob), atom_to_float(Mutrate),
+     atom_to_integer(What_crossover)].
 
 random_genotype_fn([N | _]) ->
     fun () ->
@@ -31,17 +32,25 @@ fitness_fn([N | _]) ->
             count_bits(Geno, 0) - 2*abs(N - bit_size(Geno))
     end.
 
-crossover(<<N1:1, G1/bitstring>>, <<N2:1, G2/bitstring>>) ->
-    {NG1, NG2} = crossover(G1, G2),
+crossover1(<<N1:1, G1/bitstring>>, <<N2:1, G2/bitstring>>) ->
+    {NG1, NG2} = crossover1(G1, G2),
     case utils:random_bit() of
         0 -> {<<N1:1, NG1/bitstring>>, <<N2:1, NG2/bitstring>>};
         1 -> {<<N2:1, NG1/bitstring>>, <<N1:1, NG2/bitstring>>}
     end;
-crossover(<<>>, <<>>) ->
+crossover1(<<>>, <<>>) ->
     {<<>>, <<>>}.
 
-crossover_fn(_) ->
-    fun crossover/2.
+crossover2(G1, G2) ->
+    N = random:uniform(bit_size(G1)),
+    <<AH:N, AT/bitstring>> = G1,
+    <<BH:N, BT/bitstring>> = G2,
+    {<<BH:N, AT/bitstring>>, <<AH:N, BT/bitstring>>}.
+
+crossover_fn([_, _, _, 1 | _]) ->
+    fun crossover1/2;
+crossover_fn([_, _, _, 2 | _]) ->
+    fun crossover2/2.
 
 mutation(Mutrate, <<N:1,Rest/bitstring>>) ->
     Rmut = mutation(Mutrate, Rest),
