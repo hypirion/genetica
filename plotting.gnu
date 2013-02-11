@@ -1,5 +1,5 @@
-set terminal pngcairo transparent enhanced font "arial,10" fontscale 1.0 size 500, 350
-set output 'data.png'
+set terminal pdf mono font '/usr/share/fonts/X11/Type1/lmbx10.pfb'
+set output 'plot.pdf'
 #set key inside left top box linetype -1 linewidth 1.000
 unset key
 set samples 50

@@ -1,9 +1,10 @@
 #! /bin/sh
 make --quiet compile
-erl -noshell -s main start 1000 20 roulette 10 0.1 fitness\
-             generational_mixing 10 one_max 40 0.05\
-             -s init stop
-
+erl -noshell -s main start 100 80 roulette 10 0.1 fitness\
+             generational_mixing 10 one_max 40 0.5 0.01\
+             -s init stop | nl -s " " -b a > data.dat
+gnuplot plotting.gnu
+rm data.dat
 # generations popcount sel_method K eval_method protocol M module module_args
 # sel_method -> tournament or roulette
 # K -> tournament size
