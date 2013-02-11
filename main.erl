@@ -26,8 +26,8 @@ start([AGenerations, APopcount, ASel_method, AK, AP,
     Devel_and_select = selection:Protocol(Make_child, Sel_method, 
                                           Fitness, [Popcount, M]),
     Initpop = generate_random_pop(Popcount, R, GP),
-    Analyzefn = analyze_fn(Fitness),
-    Analyzefn(Initpop, []),
+    Analyzefn = analyze_fn(only_fitness_fn(F)),
+    Analyzefn(Initpop),
     genetica_loop(Generations, Initpop, Analyzefn, Devel_and_select).
 
 generate_random_pop(Popcount, Rand_gtype, GtoP) ->
@@ -36,13 +36,13 @@ generate_random_pop(Popcount, Rand_gtype, GtoP) ->
 genetica_loop(0, _Pop, _Analyzefn, _Develop_and_select) ->
     done;
 genetica_loop(Iters, Pop, Analyzefn, Develop_and_select) ->
-    Newpop = Develop_and_select(Pop, []),
-    Analyzefn(Newpop, []),
+    Newpop = Develop_and_select(Pop, [Iters]),
+    Analyzefn(Newpop),
     genetica_loop(Iters - 1, Newpop, Analyzefn, Develop_and_select).
 
 analyze_fn(Fitness_fn) ->
-    fun (Pop, Scale_args) ->
-            Fits = [F || {indiv, _, fitness, F} <- Fitness_fn(Pop, Scale_args)],
+    fun (Pop) ->
+            Fits = Fitness_fn(Pop),
             Floats = [lists:min(Fits), utils:avg(Fits), lists:max(Fits)],
             io:format("~w ~w ~w~n", Floats)
     end.
@@ -51,6 +51,11 @@ add_fitness_fn(F, Scale) ->
     fun (Pop, Scale_args) ->
             Unscaled = [{indiv, I, fitness, F(I, Pop)} || I <- Pop],
             Scale(Unscaled, Scale_args)
+    end.
+
+only_fitness_fn(F) ->
+    fun (Pop) ->
+            [F(I, Pop) || I <- Pop]
     end.
 
 make_child_fn(Sel_method, Crossfn, Mutfn, PG, GP) ->
