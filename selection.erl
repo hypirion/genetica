@@ -35,17 +35,20 @@ roulette_selection_fn(_) ->
 
 %% Returns a zero-arity function returning the individual who won a tournament
 %% with K individuals. May return the same individual.
-tournament_selection_fn([K | _]) ->
+tournament_selection_fn([K, P | _]) ->
     fun (Plist) ->
             Randomized = utils:shuffle(Plist),
-            Firsts = lists:sublist(Randomized, K),
-            lists:last(lists:sort(fun fitness_sort/2, Firsts))
+            case random:uniform() =< P of
+                true -> hd(Randomized);
+                false -> Firsts = lists:sublist(Randomized, K),
+                         hd(lists:sort(fun fitness_sort/2, Firsts))
+            end
     end.
 
 fitness({indiv, _, fitness, F}) -> F.
 
 fitness_sort({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
-                     F1 =< F2.
+                     F1 >= F2.
 
 %% Fitness scaling
 

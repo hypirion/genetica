@@ -21,7 +21,7 @@ start([APopcount, ASel_method, AK, AP,
      fitness, F, cross, C, mut, Mut} = fetch_fns(Module, Module:parse_args(T)),
     %% Parsing done
     Fitness = add_fitness_fn(F),
-    Sel_method = selection:Sel_metfn([K]),
+    Sel_method = selection:Sel_metfn([K, P]),
     Make_child = make_child_fn(Sel_method, C, Mut, PG, GP),
     Devel_and_select = selection:Protocol(Make_child, Sel_method, 
                                           Fitness, [Popcount, K]),
