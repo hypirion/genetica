@@ -1,7 +1,7 @@
 -module(selection).
--export([roulette_selection_fn/2, tournament_selection_fn/2,
-         sigma_scale/2, boltzmann_scale/2, rank_scale/2, full_replacement_fn/3,
-         over_production_fn/3, generational_mixing_fn/3]).
+-export([roulette_selection_fn/1, tournament_selection_fn/1, fitness_scale/2,
+         sigma_scale/2, boltzmann_scale/2, rank_scale/2, full_replacement_fn/4,
+         over_production_fn/4, generational_mixing_fn/4]).
 
 %% Selection stuff
 
@@ -22,40 +22,25 @@ in_interval_fn(V) ->
 
 %% Returns a zero-arity function returning the individual who won a single
 %% roulette run. Multiple runs may return the same individual.
-roulette_selection_fn(Plist, _) ->
-    {plist, Slotted, total, N} = assign_slots(Plist),
-    fun () ->
+roulette_selection_fn(_) ->
+    fun (Plist) ->
+            {plist, Slotted, total, N} = assign_slots(Plist),
             Val = random:uniform()*N,
             {indiv, I,
-             fitness, _,
+             fitness, F,
              slots, _} = utils:ffilter(Slotted, in_interval_fn(Val)),
-            I
+            {indiv, I,
+             fitness, F}
     end.
-
-%% Picks an individual based on the fitness value given through a roulette. The
-%% fitness values may have been scaled through sigma-scaling, rank-based scaling
-%% or boltzmann scaling.
-roulette_selection(Plist, _) ->
-    {plist, Slotted, total, N} = assign_slots(Plist),
-    Val = random:uniform()*N,
-    {indiv, I,
-     fitness, _,
-     slots, _} = utils:ffilter(Slotted, in_interval_fn(Val)),
-    I.
 
 %% Returns a zero-arity function returning the individual who won a tournament
 %% with K individuals. May return the same individual.
-tournament_selection_fn(Plist, [K | _]) ->
-    fun () ->
+tournament_selection_fn([K | _]) ->
+    fun (Plist) ->
             Randomized = utils:shuffle(Plist),
             Firsts = lists:sublist(Randomized, K),
             lists:last(lists:sort(fun fitness_sort/2, Firsts))
     end.
-
-tournament_selection(Plist, [K | _]) ->
-    Randomized = utils:shuffle(Plist),
-    Firsts = lists:sublist(Randomized, K),
-    lists:last(lists:sort(fun fitness_sort/2, Firsts)).
 
 fitness({indiv, _, fitness, F}) -> F.
 
@@ -101,26 +86,33 @@ pick_best(0, _, _, Acc) ->
 pick_best(Amount, Pop, Sel_method, Acc) ->
     New = Sel_method(Pop),
     Newpop = Pop -- [New],
-    pick_best(Amount - 1, Newpop, Sel_method, [New | Acc]).
+    {indiv, I, fitness, _} = New,
+    pick_best(Amount - 1, Newpop, Sel_method, [I | Acc]).
 
-full_replacement_fn(Make_child, _, [Popsize | _]) ->
+full_replacement_fn(Make_child, _, Add_fitness, [Popsize | _]) ->
     fun (Pop) ->
-            Make_child_from_pop = fun () -> Make_child(Pop) end,
+            FPop = Add_fitness(Pop),
+            Make_child_from_pop = fun () -> Make_child(FPop) end,
             utils:repeatedly(Popsize, Make_child_from_pop)
     end.
 
-over_production_fn(Make_child, Selection_fn, [Popsize, M | _]) ->
+over_production_fn(Make_child, Selection_fn, Add_fitness, [Popsize, M | _]) ->
     fun (Pop) ->
-            Make_child_from_pop = fun () -> Make_child(Pop) end,
+            FPop = Add_fitness(Pop),
+            Make_child_from_pop = fun () -> Make_child(FPop) end,
             Cpop = utils:repeatedly(Popsize + M, Make_child_from_pop),
-            pick_best(Popsize, Cpop, Selection_fn)
+            FCpop = Add_fitness(Cpop),
+            pick_best(Popsize, FCpop, Selection_fn)
     end.
 
-generational_mixing_fn(Make_child, Selection_fn, [Popsize, M | _]) ->
+generational_mixing_fn(Make_child, Selection_fn, Add_fitness,
+                       [Popsize, M | _]) ->
     fun (Pop) ->
-            Make_child_from_pop = fun () -> Make_child(Pop) end,
+            FPop = Add_fitness(Pop),
+            Make_child_from_pop = fun () -> Make_child(FPop) end,
             Cpop = utils:repeatedly(Popsize, Make_child_from_pop),
-            Cbest = pick_best(Popsize - M, Cpop, Selection_fn),
-            Pbest = pick_best(M, Pop, Selection_fn),
+            FCpop = Add_fitness(Cpop),
+            Cbest = pick_best(Popsize - M, FCpop, Selection_fn),
+            Pbest = pick_best(M, FPop, Selection_fn),
             Cbest ++ Pbest
     end.
