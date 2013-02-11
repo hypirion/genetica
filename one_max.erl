@@ -1,9 +1,9 @@
 -module(one_max).
+-import(utils, [atom_to_integer/1, atom_to_float/1]).
 -compile(export_all). %% TODO: Remove when finished.
 
-parse_args(Vector) ->
-    [Bits, Mutprob | _] = lists:map(fun atom_to_list/1, Vector),
-    [list_to_integer(Bits), list_to_float(Mutprob)].
+parse_args([Bits, Mutprob, | _]) ->
+    [atom_to_integer(Bits), atom_to_float(Mutprob)].
 
 random_genotype_fn([N | _]) ->
     fun () ->
