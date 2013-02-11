@@ -2,8 +2,8 @@
 -import(utils, [atom_to_integer/1, atom_to_float/1]).
 -compile(export_all). %% TODO: Remove when finished.
 
-parse_args([Bits, Mutprob | _]) ->
-    [atom_to_integer(Bits), atom_to_float(Mutprob)].
+parse_args([Bits, Mutprob, Mutrate | _]) ->
+    [atom_to_integer(Bits), atom_to_float(Mutprob), atom_to_float(Mutrate)].
 
 random_genotype_fn([N | _]) ->
     fun () ->
@@ -43,16 +43,19 @@ crossover(<<>>, <<>>) ->
 crossover_fn(_) ->
     fun crossover/2.
 
-mutation(P, <<N:1,Rest/bitstring>>) ->
-    Rmut = mutation(P, Rest),
-    case random:uniform() =< P of
+mutation(Mutrate, <<N:1,Rest/bitstring>>) ->
+    Rmut = mutation(Mutrate, Rest),
+    case random:uniform() =< Mutrate of
         true -> Mutation = utils:random_bit(),
                 <<Mutation:1, Rmut/bitstring>>;
         false -> <<N:1, Rmut/bitstring>>
     end;
 mutation(_, <<>>) -> <<>>.
 
-mutation_fn([_, P | _]) ->
+mutation_fn([_, Mutprob, Mutrate | _]) ->
     fun (Geno) ->
-            mutation(P, Geno)
+            case random:uniform() =< Mutprob of
+                true -> mutation(Mutrate, Geno);
+                false -> Geno
+            end
     end.
