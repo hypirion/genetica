@@ -62,8 +62,11 @@ fitness_scale(Plist, _) ->
 sigma_scale(Plist, _) ->
     Fitnesses = lists:map(fun fitness/1, Plist),
     Avg = utils:avg(Fitnesses),
-    Stddev = max(utils:std_dev(Fitnesses, Avg), 0.001),
-    Scalefn = fun (I) -> 1 + (I - Avg)/(2 * Stddev) end,
+    Stddev = utils:std_dev(Fitnesses, Avg),
+    case Stddev =< 0.1 of
+        false -> Scalefn = fun (I) -> 1 + max(0, (I - Avg)/(2 * Stddev)) end;
+        true -> Scalefn = fun(_) -> 1 end
+    end,
     lists:keymap(Scalefn, 4, Plist).
 
 boltzmann_scale(Plist, [T]) ->
