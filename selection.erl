@@ -1,6 +1,9 @@
--module(selection_mechanisms).
--export([roulette_wheel_fn/2, tournament_selection_fn/2,
-         sigma_scale/2, boltzmann_scale/2, rank_scale/2]).
+-module(selection).
+-export([roulette_selection_fn/2, tournament_selection_fn/2,
+         sigma_scale/2, boltzmann_scale/2, rank_scale/2, full_replacement_fn/3,
+         over_production_fn/3, generational_mixing_fn/3]).
+
+%% Selection stuff
 
 %% Assigns slots to the different phenotypes based on their fitness values
 assign_slots(Plist) ->
@@ -11,7 +14,6 @@ assign_slots([{indiv, I, fitness, F} | T], N, Acc) ->
     assign_slots(T, N + F, [With_slots | Acc]);
 assign_slots([], N, Acc) ->
     {plist, Acc, total, N}.
-
 
 in_interval_fn(V) ->
     fun ({indiv, _, fitness, _, slots, [Lower, Upper]}) ->
@@ -60,6 +62,8 @@ fitness({indiv, _, fitness, F}) -> F.
 fitness_sort({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
                      F1 =< F2.
 
+%% Fitness scaling
+
 %% Do not do any scaling of the fitnesses.
 fitness_scale(Plist, _) ->
     Plist.
@@ -86,3 +90,37 @@ rank_scale(Plist, _) ->
     [{indiv, I, fitness, Min + (Max - Min)*(Index - 1)/(N - 1)} ||
         {{indiv, I, fitness, _}, Index} <-
             lists:zip(lists:sort(fun fitness_sort/2, Plist), lists:seq(1, N))].
+
+%% Selection protocols
+
+pick_best(Amount, Pop, Sel_method) ->
+    pick_best(Amount, Pop, Sel_method, []).
+
+pick_best(0, _, _, Acc) ->
+    Acc;
+pick_best(Amount, Pop, Sel_method, Acc) ->
+    New = Sel_method(Pop),
+    Newpop = Pop -- [New],
+    pick_best(Amount - 1, Newpop, Sel_method, [New | Acc]).
+
+full_replacement_fn(Make_child, _, [Popsize | _]) ->
+    fun (Pop) ->
+            Make_child_from_pop = fun () -> Make_child(Pop) end,
+            utils:repeatedly(Popsize, Make_child_from_pop)
+    end.
+
+over_production_fn(Make_child, Selection_fn, [Popsize, M | _]) ->
+    fun (Pop) ->
+            Make_child_from_pop = fun () -> Make_child(Pop) end,
+            Cpop = utils:repeatedly(Popsize + M, Make_child_from_pop),
+            pick_best(Popsize, Cpop, Selection_fn)
+    end.
+
+generational_mixing_fn(Make_child, Selection_fn, [Popsize, M | _]) ->
+    fun (Pop) ->
+            Make_child_from_pop = fun () -> Make_child(Pop) end,
+            Cpop = utils:repeatedly(Popsize, Make_child_from_pop),
+            Cbest = pick_best(Popsize - M, Cpop, Selection_fn),
+            Pbest = pick_best(M, Pop, Selection_fn),
+            Cbest ++ Pbest
+    end.
