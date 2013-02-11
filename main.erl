@@ -5,12 +5,13 @@
 -import(selection_mechanisms, [roulette_selection_fn/2, sigma_scale/2,
                                boltzmann_scale/2, rank_scale/2]).
 
-start([APopcount, ASel_method, AK, AP,
+start([AGenerations, APopcount, ASel_method, AK, AP,
        AEval_method, AProtocol, AM, Module | T]) ->
     %% Make run truly random
     random:seed(now()),
     %% Argument parsing from here on
-    [Popcount, K, M] = [atom_to_integer(X) || X <- [APopcount, AK, AM]],
+    [Generations, Popcount, K, M] =
+        [atom_to_integer(X) || X <- [AGenerations, APopcount, AK, AM]],
     P = atom_to_float(AP),
     [Sel_metfn, Eval_method, Protocol] =
         [atom_append(X, Y) ||
@@ -27,7 +28,7 @@ start([APopcount, ASel_method, AK, AP,
     Initpop = generate_random_pop(Popcount, R, GP),
     Analyzefn = analyze_fn(Fitness),
     Analyzefn(Initpop, []),
-    genetica_loop(1000, Initpop, Analyzefn, Devel_and_select).
+    genetica_loop(Generations, Initpop, Analyzefn, Devel_and_select).
 
 generate_random_pop(Popcount, Rand_gtype, GtoP) ->
     [GtoP(Genome) || Genome <- utils:repeatedly(Popcount, Rand_gtype)].

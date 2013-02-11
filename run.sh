@@ -1,10 +1,10 @@
 #! /bin/sh
 make --quiet compile
-erl -noshell -s main start 20 tournament 10 0.2 fitness full_replacement 300\
-             one_max 40 0.2\
+erl -noshell -s main start 1000 20 roulette 10 0.1 fitness\
+             generational_mixing 10 one_max 40 0.05\
              -s init stop
 
-# popcount sel_method K eval_method protocol M module module_args
+# generations popcount sel_method K eval_method protocol M module module_args
 # sel_method -> tournament or roulette
 # K -> tournament size
 # P -> probability of picking random player from tournament
