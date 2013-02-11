@@ -28,16 +28,16 @@ crossover(<<N1:1, G1/bitstring>>, <<N2:1, G2/bitstring>>) ->
 crossover_fn(_) ->
     fun crossover/2.
 
-mutation_fn([P]) ->
-    Rec = fun (F, <<N:1,Rest/bitstring>>) ->
-                  Rmut = F(F, Rest/bitstring),
-                  case random:uniform() =< P of
-                      true -> Mutation = utils:random_bit(),
-                              <<Mutation:1, Rmut/bitstring>>;
-                      false -> <<N:1, Rmut/bitstring>>
-                  end;
-              (_, <<>>) -> <<>>
-          end,
+mutation(P, <<N:1,Rest/bitstring>>) ->
+    Rmut = mutation(P, Rest),
+    case random:uniform() =< P of
+        true -> Mutation = utils:random_bit(),
+                <<Mutation:1, Rmut/bitstring>>;
+        false -> <<N:1, Rmut/bitstring>>
+    end;
+mutation(_, <<>>) -> <<>>.
+
+mutation_fn([_, P | _]) ->
     fun (Geno) ->
-            Rec(Rec, Geno)
+            mutation(P, Geno)
     end.
