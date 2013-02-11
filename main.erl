@@ -63,8 +63,9 @@ make_child_fn(Sel_method, Crossfn, Mutfn, PG, GP) ->
 
 pick_parents_fn(Sel_method) ->
     fun (FPop) ->
-            {indiv, P1, fitness, _} = Sel_method(FPop),
-            {indiv, P2, fitness, _} = Sel_method(FPop -- [P1]),
+            FP1 = Sel_method(FPop),
+            {indiv, P1, fitness, _} = FP1,
+            {indiv, P2, fitness, _} = Sel_method(FPop -- [FP1]),
             [P1, P2]
     end.
 
