@@ -1,6 +1,6 @@
 -module(utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
-         comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1]).
+         comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2]).
 
 repeatedly(0, _) ->
     [];
@@ -58,3 +58,6 @@ atom_to_integer(Atom) ->
 
 atom_to_float(Atom) ->
     list_to_float(atom_to_list(Atom)).
+
+atom_append(Atom, String) ->
+    list_to_atom(atom_to_list(Atom) ++ String).
