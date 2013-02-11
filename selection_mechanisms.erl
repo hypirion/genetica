@@ -20,7 +20,7 @@ in_interval_fn(V) ->
 
 %% Returns a zero-arity function returning the individual who won a single
 %% roulette run. Multiple runs may return the same individual.
-roulette_wheel_fn(Plist, _) ->
+roulette_selection_fn(Plist, _) ->
     {plist, Slotted, total, N} = assign_slots(Plist),
     fun () ->
             Val = random:uniform()*N,
@@ -30,7 +30,10 @@ roulette_wheel_fn(Plist, _) ->
             I
     end.
 
-roulette_wheel(Plist, _) ->
+%% Picks an individual based on the fitness value given through a roulette. The
+%% fitness values may have been scaled through sigma-scaling, rank-based scaling
+%% or boltzmann scaling.
+roulette_selection(Plist, _) ->
     {plist, Slotted, total, N} = assign_slots(Plist),
     Val = random:uniform()*N,
     {indiv, I,
@@ -58,7 +61,7 @@ fitness_sort({indiv, _, fitness, F1}, {indiv, _, fitness, F2}) ->
                      F1 =< F2.
 
 %% Do not do any scaling of the fitnesses.
-identity_scale(Plist, _) ->
+fitness_scale(Plist, _) ->
     Plist.
 
 sigma_scale(Plist, _) ->
