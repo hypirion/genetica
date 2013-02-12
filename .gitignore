@@ -6,3 +6,5 @@ erl_crash.dump
 *.plt
 *~
 /plot.pdf
+/tmp
+/data.dat
