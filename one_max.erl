@@ -1,6 +1,8 @@
 -module(one_max).
 -import(utils, [atom_to_integer/1, atom_to_float/1]).
--compile(export_all). %% TODO: Remove when finished.
+-export([parse_args/1, random_genotype_fn/1, phenotype_to_genotype_fn/1,
+         genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
+         mutation_fn/1]).
 
 parse_args([Bits, Mutprob, Mutrate, What_crossover | _]) ->
     [atom_to_integer(Bits), atom_to_float(Mutprob), atom_to_float(Mutrate),
