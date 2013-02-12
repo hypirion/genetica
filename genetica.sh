@@ -1,10 +1,9 @@
 #! /bin/sh
-make --quiet compile && \
-./genetica.sh 100 110 roulette 30 0.2 sigma\
-             full_replacement 100 one_max 40 0.2 0.001 1\
-             | nl -s " " -b a > data.dat && \
-gnuplot plotting.gnu
-# generations popcount sel_method K eval_method protocol M module module_args
+erl -noshell -s main start "$@" -s init stop
+
+#  ./genetica.sh generations popcount sel_method K eval_method \
+#                protocol M module module_args
+#
 # sel_method -> tournament or roulette
 # K -> tournament size
 # P -> probability of picking random player from tournament
