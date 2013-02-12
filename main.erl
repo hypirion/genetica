@@ -28,17 +28,29 @@ start([AGenerations, APopcount, ASel_method, AK, AP,
     Initpop = generate_random_pop(Popcount, R, GP),
     Analyzefn = analyze_fn(only_fitness_fn(F)),
     Analyzefn(Initpop),
-    genetica_loop(Generations - 1, Initpop, Analyzefn, Devel_and_select).
+    Init_T = Generations/2,
+    Cooldown = math:pow(7, 4/(3*Generations)) *
+               math:pow(1/Generations, 4/(3*Generations)),
+    genetica_loop(Generations - 1, Initpop, [Generations, Init_T, Cooldown],
+                  Analyzefn, Devel_and_select).
 
 generate_random_pop(Popcount, Rand_gtype, GtoP) ->
     [GtoP(Genome) || Genome <- utils:repeatedly(Popcount, Rand_gtype)].
 
-genetica_loop(0, _Pop, _Analyzefn, _Develop_and_select) ->
+genetica_loop(0, _Pop, _Tvals, _Analyzefn, _Develop_and_select) ->
     done;
-genetica_loop(Iters, Pop, Analyzefn, Develop_and_select) ->
-    Newpop = Develop_and_select(Pop, [Iters]),
+genetica_loop(Iters, Pop, [Gens, T, Cooldown], Analyzefn, Develop_and_select) ->
+    Newpop = Develop_and_select(Pop, [T]),
     Analyzefn(Newpop),
-    genetica_loop(Iters - 1, Newpop, Analyzefn, Develop_and_select).
+    NT = new_temp(Iters, Gens, T, Cooldown),
+    genetica_loop(Iters - 1, Newpop, [Gens, NT, Cooldown],
+                  Analyzefn, Develop_and_select).
+
+new_temp(Iters, Gens, T, _Cooldown)
+  when Iters =< Gens/4 ->
+    T;
+new_temp(_Iters, _Gens, T, Cooldown) ->
+    T * Cooldown.
 
 analyze_fn(Fitness_fn) ->
     fun (Pop) ->
