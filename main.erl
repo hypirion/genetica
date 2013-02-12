@@ -90,11 +90,7 @@ pick_parents_fn(Sel_method) ->
 
 child_producer_fn(Crossfn, Mutfn) ->
     fun (PG1, PG2) ->
-            {CG1, CG2} = Crossfn(PG1, PG2),
-            case utils:random_bit() of
-                0 -> Mutfn(CG1);
-                1 -> Mutfn(CG2)
-            end
+            Mutfn(Crossfn(PG1, PG2))
     end.
 
 fetch_fns(Module, Opts) ->

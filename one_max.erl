@@ -4,9 +4,9 @@
          genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
          mutation_fn/1]).
 
-parse_args([Bits, Mutprob, Mutrate, What_crossover | _]) ->
+parse_args([Bits, Mutprob, Mutrate, What_crossover, Crossprob | _]) ->
     [atom_to_integer(Bits), atom_to_float(Mutprob), atom_to_float(Mutrate),
-     atom_to_integer(What_crossover)].
+     atom_to_integer(What_crossover), atom_to_float(Crossprob)].
 
 random_genotype_fn([N | _]) ->
     fun () ->
@@ -34,23 +34,32 @@ fitness_fn([N | _]) ->
             count_bits(Geno, 0) - 2*abs(N - bit_size(Geno))
     end.
 
-crossover1(<<N1:1, G1/bitstring>>, <<N2:1, G2/bitstring>>) ->
-    {NG1, NG2} = crossover1(G1, G2),
-    case utils:random_bit() of
-        0 -> {<<N1:1, NG1/bitstring>>, <<N2:1, NG2/bitstring>>};
-        1 -> {<<N2:1, NG1/bitstring>>, <<N1:1, NG2/bitstring>>}
+crossover1(<<N1:1, G1/bitstring>>, <<N2:1, G2/bitstring>>, P) ->
+    {NG1, NG2} = crossover1(G1, G2, P),
+    case P =< random:uniform() of
+        true -> {<<N1:1, NG1/bitstring>>, <<N2:1, NG2/bitstring>>};
+        false -> {<<N2:1, NG1/bitstring>>, <<N1:1, NG2/bitstring>>}
     end;
-crossover1(<<>>, <<>>) ->
+crossover1(<<>>, <<>>, _P) ->
     {<<>>, <<>>}.
 
 crossover2(G1, G2) ->
     N = random:uniform(bit_size(G1)),
     <<AH:N, AT/bitstring>> = G1,
     <<BH:N, BT/bitstring>> = G2,
-    {<<BH:N, AT/bitstring>>, <<AH:N, BT/bitstring>>}.
+    case utils:random_bit() of
+        0 -> <<BH:N, AT/bitstring>>;
+        1 -> <<AH:N, BT/bitstring>>
+    end.
 
-crossover_fn([_, _, _, 1 | _]) ->
-    fun crossover1/2;
+crossover_fn([_, _, _, 1, P | _]) ->
+    fun (G1, G2) ->
+            {NG1, NG2} = crossover1(G1, G2, P),
+            case utils:random_bit() of
+                0 -> NG1;
+                1 -> NG2
+            end
+    end;
 crossover_fn([_, _, _, 2 | _]) ->
     fun crossover2/2.
 
