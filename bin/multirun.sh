@@ -10,3 +10,6 @@ for i in $ITERS; do
 done
 bin/squish.py tmp/$2- $N | nl -s " " -b a > tmp/$2.dat
 gnuplot -e "outfile='$2'; infile='tmp/$2.dat';" bin/multiplot.gnu
+for i in $ITERS; do
+    rm -f tmp/$2-$i
+done
