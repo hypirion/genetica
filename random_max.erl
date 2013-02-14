@@ -2,7 +2,7 @@
 -import(utils, [atom_to_integer/1, atom_to_float/1]).
 -export([parse_args/1, random_genotype_fn/1, phenotype_to_genotype_fn/1,
          genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
-         mutation_fn/1]).
+         mutation_fn/1, analyze_fn/1]).
 
 parse_args(Args) ->
     [N | Rest] = one_max:parse_args(Args),
@@ -25,3 +25,4 @@ phenotype_to_genotype_fn([_M | Args]) -> one_max:phenotype_to_genotype_fn(Args).
 genotype_to_phenotype_fn([_M | Args]) -> one_max:genotype_to_phenotype_fn(Args).
 crossover_fn([_M | Args]) -> one_max:crossover_fn(Args).
 mutation_fn([_M | Args]) -> one_max:mutation_fn(Args).
+analyze_fn(Fitness_fn) -> one_max:analyze_fn(Fitness_fn).

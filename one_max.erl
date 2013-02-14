@@ -2,7 +2,7 @@
 -import(utils, [atom_to_integer/1, atom_to_float/1]).
 -export([parse_args/1, random_genotype_fn/1, phenotype_to_genotype_fn/1,
          genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
-         mutation_fn/1]).
+         mutation_fn/1, analyze_fn/1]).
 
 parse_args([Bits, Mutprob, Mutrate, What_crossover, Crossprob | _]) ->
     [atom_to_integer(Bits), atom_to_float(Mutprob), atom_to_float(Mutrate),
@@ -78,4 +78,12 @@ mutation_fn([_, Mutprob, Mutrate | _]) ->
                 true -> mutation(Mutrate, Geno);
                 false -> Geno
             end
+    end.
+
+analyze_fn(Fitness_fn) ->
+    fun (Pop) ->
+            Fits = Fitness_fn(Pop),
+            Floats = [utils:avg(Fits), utils:std_dev(Fits), lists:max(Fits),
+                      lists:min(Fits)],
+            io:format("~w ~w ~w ~w~n", Floats)
     end.

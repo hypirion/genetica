@@ -26,7 +26,7 @@ start([AGenerations, APopcount, ASel_method, AK, AP,
     Devel_and_select = selection:Protocol(Make_child, Sel_method, 
                                           Fitness, [Popcount, M]),
     Initpop = generate_random_pop(Popcount, R, GP),
-    Analyzefn = analyze_fn(only_fitness_fn(F)),
+    Analyzefn = Module:analyze_fn(only_fitness_fn(F)),
     Analyzefn(Initpop),
     Init_T = Generations/2,
     Cooldown = math:pow(7, 4/(3*Generations)) *
@@ -51,14 +51,6 @@ new_temp(Iters, Gens, T, _Cooldown)
     T;
 new_temp(_Iters, _Gens, T, Cooldown) ->
     T * Cooldown.
-
-analyze_fn(Fitness_fn) ->
-    fun (Pop) ->
-            Fits = Fitness_fn(Pop),
-            Floats = [utils:avg(Fits), utils:std_dev(Fits), lists:max(Fits),
-                      lists:min(Fits)],
-            io:format("~w ~w ~w ~w~n", Floats)
-    end.
 
 add_fitness_fn(F, Scale) ->
     fun (Pop, Scale_args) ->
