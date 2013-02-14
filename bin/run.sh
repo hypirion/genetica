@@ -1,9 +1,8 @@
 #! /bin/sh
-make --quiet compile && \
-bin/genetica.sh 100 120 roulette 30 0.2 fitness\
-             full_replacement 100 one_max 40 0.2 0.001 1 0.7\
+bin/genetica.sh 500 20 roulette 30 0.2 sigma\
+             generational_mixing 5 blotto 5 0.0 0.0 0.2 0.01 0.6 \
              | nl -s " " -b a > data.dat && \
-gnuplot bin/plotting.gnu
+gnuplot bin/blotto.gp
 # generations popcount sel_method K eval_method protocol M module module_args
 # sel_method -> tournament or roulette
 # K -> tournament size
