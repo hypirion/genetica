@@ -4,7 +4,7 @@
 	erlc -W $<
 
 ERL = erl -boot start_clean
-MODS = main conversions one_max utils selection random_max
+MODS = main conversions utils selection one_max random_max blotto
 
 all: compile
 
