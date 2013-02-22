@@ -1,6 +1,7 @@
 -module(utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
-         comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2]).
+         comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2,
+         prpcs/2]).
 
 repeatedly(0, _) ->
     [];
@@ -61,3 +62,21 @@ atom_to_float(Atom) ->
 
 atom_append(Atom, String) ->
     list_to_atom(atom_to_list(Atom) ++ String).
+
+%% Parallel remote procedure calls
+prpcs(Msg, List) ->
+    Count = info_sum({self(), Msg}, List, 0),
+    harvest(element(1, Msg), Count, []).
+
+info_sum(_Msg, [], N) ->
+    N;
+info_sum(Msg, [H | T], N) ->
+    H ! Msg,
+    info_sum(Msg, T, N + 1).
+
+harvest(_, 0, Accum) ->
+    Accum;
+harvest(Recv, N, Accum) ->
+    receive {Pid, Recv, Val} ->
+            harvest(Recv, N - 1, [{Pid, Val} | Accum])
+    end.
