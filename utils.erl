@@ -1,7 +1,7 @@
 -module(utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
          comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2,
-         pmap/2, clamp/3, rand_between/2]).
+         pmap/2, clamp/3, rand_between/2, iterate/3]).
 
 repeatedly(0, _) ->
     [];
@@ -85,3 +85,12 @@ pmap_harvest([]) ->
 
 pmap_f(Parent, F, I) ->
     Parent ! {self(), (catch F(I))}.
+
+iterate(N, F, Init) ->
+    iterate(N, F, Init, [Init]).
+
+iterate(0, _F, _Cur, Acc) ->
+    lists:reverse(Acc);
+iterate(N, F, Cur, Acc) ->
+    New = F(Cur),
+    iterate(N-1, F, New, [New | Acc]).
