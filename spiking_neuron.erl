@@ -90,5 +90,15 @@ crossover_avg(<<A/float, TA/binary>>, <<B/float, TB/binary>>, <<Res/binary>>) ->
     C = (A + B) / 2,
     crossover_avg(TA, TB, <<Res/binary, C/float>>).
 
+crossover_sel(G1, G2) ->
+    crossover_sel(G1, G2, <<>>).
+
+crossover_sel(<<A/float, TA/binary>>, <<B/float, TB/binary>>, <<Res/binary>>) ->
+    case utils:random_bit() of
+        0 -> C = A;
+        1 -> C = B
+    end,
+    crossover_sel(TA, TB, <<Res/binary, C/float>>).
+
 crossover_fn(_) ->
     fun crossover_avg/2.
