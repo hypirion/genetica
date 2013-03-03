@@ -78,6 +78,20 @@ genotype_to_phenotype_fn(_) ->
                     spikes=SPos, fitness=Fitness}
     end.
 
+-define(SPIKE_TIME_P, 2.0).
+
+time_sum({TAi, TBi}, Acc) ->
+    Delta = math:pow(abs(TAi - TBi), ?SPIKE_TIME_P),
+    Acc + Delta.
+
+time_fitness(G, GSpikes, A, ASpikes) ->
+    Zipped = utils:zip(GSpikes, ASpikes),
+    N = length(Zipped),
+    Total = lists:foldl(time_sum, 0, Zipped),
+    %% Spike difference penalty here.
+    Res = math:pow(Total, 1/?SPIKE_TIME_P)/N,
+    Res.
+
 fitness_fn(_) ->
     fun (Ptype, _Others) ->
             Ptype#neuron.fitness
