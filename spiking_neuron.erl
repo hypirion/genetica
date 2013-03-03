@@ -13,6 +13,8 @@
 -define(NEURON_INIT_U, 0).
 -define(ACT_K, 5).
 -define(ACT_T, 0).
+-define(ABCDK_INTERVALS,
+        [{0.001, 0.2}, {0.01, 0.3}, {-80, -30}, {0.1, 10}, {0.01, 1.0}]).
 
 -record(neuron, {gtype, train, spikes, fitness=0}).
 
@@ -102,3 +104,22 @@ crossover_sel(<<A/float, TA/binary>>, <<B/float, TB/binary>>, <<Res/binary>>) ->
 
 crossover_fn(_) ->
     fun crossover_avg/2.
+
+mutation(P, <<X/float, R/binary>>, [{L, U, Stddev} | T]) ->
+    Rmut = mutation(P, R, T),
+    case random:uniform() =< P of
+        true -> Unclamped = utils:rand_gauss(X, Stddev),
+                Clamped = utils:clamp(Unclamped, L, U),
+                <<Clamped/float, Rmut/binary>>;
+        false -> <<X/float, Rmut/binary>>
+    end;
+mutation(_, <<>>, []) -> <<>>.
+
+mutation_fn([_, Mutprob, Mutrate | _]) ->
+    Range_and_stddev = [{L, U, (U-L)/6} || {L, U} <- ?ABCDK_INTERVALS],
+    fun (Gtype) ->
+            case random:uniform() =< Mutprob of
+                true -> mutation(Mutrate, Gtype, Range_and_stddev);
+                false -> Gtype
+            end
+    end.
