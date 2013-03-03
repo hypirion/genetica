@@ -105,6 +105,12 @@ interval_fitness(_G, GSpikes, _A, ASpikes) ->
     Res = math:pow(Total, 1/?SPIKE_TIME_P)/(N - 1),
     1 / max(Res, 0.00001).
 
+waveform_fitness(G, _GSpikes, A, _ASpikes) ->
+    Sum = lists:sum([math:pow(abs(Ai - Gi), ?SPIKE_TIME_P)
+                     || {Gi, Ai} <- lists:zip(G, A)]),
+    Res = math:pow(Sum, 1/?SPIKE_TIME_P)/(?TIMESTEPS + 1),
+    1 / max(Res, 0.00001).
+
 fitness_fn(_) ->
     fun (Ptype, _Others) ->
             Ptype#neuron.fitness
