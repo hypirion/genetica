@@ -81,3 +81,14 @@ fitness_fn(_) ->
             Ptype#neuron.fitness
     end.
 
+crossover_avg(G1, G2) ->
+    crossover_avg(G1, G2, <<>>).
+
+crossover_avg(<<>>, <<>>, Res) ->
+    Res;
+crossover_avg(<<A/float, TA/binary>>, <<B/float, TB/binary>>, <<Res/binary>>) ->
+    C = (A + B) / 2,
+    crossover_avg(TA, TB, <<Res/binary, C/float>>).
+
+crossover_fn(_) ->
+    fun crossover_avg/2.
