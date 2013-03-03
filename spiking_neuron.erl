@@ -89,8 +89,8 @@ time_fitness(_G, GSpikes, _A, ASpikes) ->
     Zipped = utils:zip(GSpikes, ASpikes),
     N = length(Zipped),
     Total = lists:foldl(fun time_sum/2, 0, Zipped),
-    %% Spike difference penalty here.
-    Res = math:pow(Total, 1/?SPIKE_TIME_P)/N,
+    Tot_sp = Total + spike_penalty(GSpikes, ASpikes, N),
+    Res = math:pow(Tot_sp, 1/?SPIKE_TIME_P)/N,
     1 / max(Res, 0.00001).
 
 interval_sum({{TAi_, TBi_}, {TAi, TBi}}, Acc) ->
@@ -102,9 +102,13 @@ interval_fitness(_G, GSpikes, _A, ASpikes) ->
     N = length(Zipped),
     Multizipped = utils:zip(Zipped, tl(Zipped)),
     Total = lists:foldl(fun interval_sum/2, 0, Multizipped),
-    %% Spike difference penalty here.
-    Res = math:pow(Total, 1/?SPIKE_TIME_P)/(N - 1),
+    Tot_sp = Total + spike_penalty(GSpikes, ASpikes, N),
+    Res = math:pow(Tot_sp, 1/?SPIKE_TIME_P)/(N - 1),
     1 / max(Res, 0.00001).
+
+spike_penalty(A, B, N) ->
+    abs(length(A) - length(B))
+        * (?TIMESTEPS + 1) / max(2*N, 1).
 
 waveform_fitness(G, _GSpikes, A, _ASpikes) ->
     Sum = lists:sum([math:pow(abs(Ai - Gi), ?SPIKE_TIME_P)
