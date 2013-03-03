@@ -14,7 +14,7 @@
 -define(ACT_K, 5).
 -define(ACT_T, 0).
 
--record(neuron, {gtype, train, spikes}).
+-record(neuron, {gtype, train, spikes, fitness=0}).
 
 parse_args([Fname, Sdm, Timesteps| T ]) ->
     [].
@@ -70,6 +70,14 @@ genotype_to_phenotype_fn(_) ->
     fun (Genotype) ->
             Train = create_train(Genotype),
             SPos = spike_positions(Train),
+            Fitness = 0,
             %% TODO: Generate fitness here as well.
-            #neuron{gtype=Genotype, train=Train, spikes=SPos}
+            #neuron{gtype=Genotype, train=Train,
+                    spikes=SPos, fitness=Fitness}
     end.
+
+fitness_fn(_) ->
+    fun (Ptype, _Others) ->
+            Ptype#neuron.fitness
+    end.
+
