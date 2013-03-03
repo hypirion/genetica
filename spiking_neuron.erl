@@ -90,7 +90,20 @@ time_fitness(G, GSpikes, A, ASpikes) ->
     Total = lists:foldl(time_sum, 0, Zipped),
     %% Spike difference penalty here.
     Res = math:pow(Total, 1/?SPIKE_TIME_P)/N,
-    Res.
+    1 / max(Res, 0.00001).
+
+interval_sum({{TAi_, TBi_}, {TAi, TBi}}, Acc) ->
+    Interval_diff = math:pow(abs((TAi - TAi_) - (TBi - TBi_)), ?SPIKE_TIME_P),
+    Acc + Interval_diff.
+
+interval_fitness(_G, GSpikes, _A, ASpikes) ->
+    Zipped = utils:zip(GSpikes, ASpikes),
+    N = length(Zipped),
+    Multizipped = utils:zip(Zipped, tl(Zipped)),
+    Total = lists:foldl(fun interval_sum/2, 0, Multizipped),
+    %% Spike difference penalty here.
+    Res = math:pow(Total, 1/?SPIKE_TIME_P)/(N - 1),
+    1 / max(Res, 0.00001).
 
 fitness_fn(_) ->
     fun (Ptype, _Others) ->
