@@ -18,8 +18,9 @@
 
 -record(neuron, {gtype, train, spikes, fitness=0}).
 
-parse_args([Fname, Sdm | T ]) ->
-    [atom_to_list(Fname), Sdm | T].
+parse_args([Fname, Sdm, Mutprob, Mutrate, Xover_type| _]) ->
+    [atom_to_list(Fname), utils:atom_append(Sdm, "_fitness"),
+     atom_to_float(Mutprob), atom_to_float(Mutrate), Xover_type].
 
 random_genotype_fn(_) ->
     fun () ->
@@ -138,10 +139,14 @@ crossover_sel(<<A/float, TA/binary>>, <<B/float, TB/binary>>, <<Res/binary>>) ->
         0 -> C = A;
         1 -> C = B
     end,
-    crossover_sel(TA, TB, <<Res/binary, C/float>>).
+    crossover_sel(TA, TB, <<Res/binary, C/float>>);
+crossover_sel(<<>>, <<>>, Res) ->
+    Res.
 
-crossover_fn(_) ->
-    fun crossover_avg/2.
+crossover_fn([_, _, _, _, avg | _]) ->
+    fun crossover_avg/2;
+crossover_fn([_, _, _, _, sel | _]) ->
+    fun crossover_sel/2.
 
 mutation(P, <<X/float, R/binary>>, [{L, U, Stddev} | T]) ->
     Rmut = mutation(P, R, T),
@@ -153,11 +158,23 @@ mutation(P, <<X/float, R/binary>>, [{L, U, Stddev} | T]) ->
     end;
 mutation(_, <<>>, []) -> <<>>.
 
-mutation_fn([_, Mutprob, Mutrate | _]) ->
+mutation_fn([_, _, Mutprob, Mutrate | _]) ->
     Range_and_stddev = [{L, U, (U-L)/6} || {L, U} <- ?ABCDK_INTERVALS],
     fun (Gtype) ->
             case random:uniform() =< Mutprob of
                 true -> mutation(Mutrate, Gtype, Range_and_stddev);
                 false -> Gtype
             end
+    end.
+
+analyze_fn(_) ->
+    Comparator = fun (X, Y) ->
+                         X#neuron.fitness > Y#neuron.fitness
+                 end,
+    fun (Pop) ->
+            [Best | _] = lists:sort(Comparator, Pop),
+            io:format("~w ", [Best#neuron.fitness]),
+            lists:foreach(fun (v) -> io:format("~w ", [v]) end,
+                          Best#neuron.train),
+            io:format("~n")
     end.
