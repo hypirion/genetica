@@ -1,7 +1,7 @@
 -module(utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
          comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2,
-         pmap/2, clamp/3, rand_between/2, iterate/3]).
+         pmap/2, clamp/3, rand_between/2, iterate/3, rand_gauss/2]).
 
 repeatedly(0, _) ->
     [];
@@ -94,3 +94,11 @@ iterate(0, _F, _Cur, Acc) ->
 iterate(N, F, Cur, Acc) ->
     New = F(Cur),
     iterate(N-1, F, New, [New | Acc]).
+
+%% Box-Muller method
+rand_gauss(Mu, Sigma) ->
+    U = random:uniform(),
+    V = random:uniform(),
+    Z = math:sqrt(-2 * math:log(U)) * math:cos(2*math:pi()*V),
+    X = Mu + Sigma * Z,
+    X.
