@@ -1,7 +1,7 @@
 -module(utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
          comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2,
-         pmap/2, clamp/3, rand_between/2, iterate/3, rand_gauss/2]).
+         pmap/2, clamp/3, rand_between/2, iterate/3, rand_gauss/2, zip/2]).
 
 repeatedly(0, _) ->
     [];
@@ -102,3 +102,12 @@ rand_gauss(Mu, Sigma) ->
     Z = math:sqrt(-2 * math:log(U)) * math:cos(2*math:pi()*V),
     X = Mu + Sigma * Z,
     X.
+
+%% Allows us to zip lists of uneven length
+zip(A, B) ->
+    zip(A, B, []).
+
+zip([A | RA], [B | RB], Acc) ->
+    zip(RA, RB, [{A, B} | Acc]);
+zip(_, _, Acc) ->
+    lists:reverse(Acc).
