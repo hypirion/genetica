@@ -18,8 +18,8 @@
 
 -record(neuron, {gtype, train, spikes, fitness=0}).
 
-parse_args([Fname, Sdm, Timesteps| T ]) ->
-    [].
+parse_args([Fname, Sdm | T ]) ->
+    [atom_to_list(Fname), Sdm | T].
 
 random_genotype_fn(_) ->
     fun () ->
@@ -45,7 +45,7 @@ create_train(<<A/float, B/float, C/float, D/float, K/float>>) ->
                 end,
                 [min(New_V, ?SPIKE_THRESHOLD), New_U]
         end,
-    [V || [V, U] <- utils:iterate(?TIMESTEPS, F,
+    [V || [V, _] <- utils:iterate(?TIMESTEPS, F,
                                   [?NEURON_INIT_V, ?NEURON_INIT_U])].
 
 spike_positions(Volt_values) ->
@@ -68,12 +68,13 @@ spike_positions(H, T, Acc, Pos) ->
             spike_positions(tl(H) ++ [hd(T)], tl(T), NAcc, Pos + 1)
     end.
 
-genotype_to_phenotype_fn(_) ->
+genotype_to_phenotype_fn([Fname, Fitfn | _]) ->
+    {ok, [Goal]} = file:consult(Fname),
+    Goal_spikes = spike_positions(Goal),
     fun (Genotype) ->
             Train = create_train(Genotype),
             SPos = spike_positions(Train),
-            Fitness = 0,
-            %% TODO: Generate fitness here as well.
+            Fitness = Fitfn(Goal, Goal_spikes, Train, SPos),
             #neuron{gtype=Genotype, train=Train,
                     spikes=SPos, fitness=Fitness}
     end.
@@ -84,10 +85,10 @@ time_sum({TAi, TBi}, Acc) ->
     Delta = math:pow(abs(TAi - TBi), ?SPIKE_TIME_P),
     Acc + Delta.
 
-time_fitness(G, GSpikes, A, ASpikes) ->
+time_fitness(_G, GSpikes, _A, ASpikes) ->
     Zipped = utils:zip(GSpikes, ASpikes),
     N = length(Zipped),
-    Total = lists:foldl(time_sum, 0, Zipped),
+    Total = lists:foldl(fun time_sum/2, 0, Zipped),
     %% Spike difference penalty here.
     Res = math:pow(Total, 1/?SPIKE_TIME_P)/N,
     1 / max(Res, 0.00001).
