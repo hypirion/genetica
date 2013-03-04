@@ -75,9 +75,14 @@ genotype_to_phenotype_fn([Fname, Fitfn | _]) ->
     fun (Genotype) ->
             Train = create_train(Genotype),
             SPos = spike_positions(Train),
-            Fitness = Fitfn(Goal, Goal_spikes, Train, SPos),
+            Fitness = ?MODULE:Fitfn(Goal, Goal_spikes, Train, SPos),
             #neuron{gtype=Genotype, train=Train,
                     spikes=SPos, fitness=Fitness}
+    end.
+
+phenotype_to_genotype_fn(_) ->
+    fun (Phenotype) ->
+            Phenotype#neuron.gtype
     end.
 
 -define(SPIKE_TIME_P, 2.0).
@@ -101,7 +106,9 @@ interval_sum({{TAi_, TBi_}, {TAi, TBi}}, Acc) ->
 interval_fitness(_G, GSpikes, _A, ASpikes) ->
     Zipped = utils:zip(GSpikes, ASpikes),
     N = length(Zipped),
-    Multizipped = utils:zip(Zipped, tl(Zipped)),
+    if N =:= 0 -> Multizipped = [];
+       true -> Multizipped = utils:zip(Zipped, tl(Zipped))
+    end,
     Total = lists:foldl(fun interval_sum/2, 0, Multizipped),
     Tot_sp = Total + spike_penalty(GSpikes, ASpikes, N),
     Res = math:pow(Tot_sp, 1/?SPIKE_TIME_P) / max((N - 1), 0.00001),
@@ -167,14 +174,36 @@ mutation_fn([_, _, Mutprob, Mutrate | _]) ->
             end
     end.
 
+write_header() ->
+    print_float(?TIMESTEPS + 2),
+    lists:foreach(fun print_float/1, lists:seq(0, ?TIMESTEPS)).
+
+analyze_counter(N) ->
+    receive
+        {From, get_and_increment} ->
+            From ! {get_and_increment, N},
+            analyze_counter(N+1)
+    end.
+
+print_float(X) ->
+    io:format("~s", [<<X:32/big-float>>]).
+
 analyze_fn(_) ->
+    write_header(),
     Comparator = fun (X, Y) ->
                          X#neuron.fitness > Y#neuron.fitness
                  end,
+    Counter = spawn(fun () -> analyze_counter(1) end),
     fun (Pop) ->
             [Best | _] = lists:sort(Comparator, Pop),
-            io:format("~w ", [Best#neuron.fitness]),
-            lists:foreach(fun (v) -> io:format("~w ", [v]) end,
-                          Best#neuron.train),
-            io:format("~n")
+            Counter ! {self(), get_and_increment},
+            receive
+                {get_and_increment, N} ->
+                    print_float(N)
+            end,
+            lists:foreach(fun print_float/1, Best#neuron.train)
+%            io:format("~w ", [Best#neuron.fitness]),
+%            lists:foreach(fun (V) -> io:format("~w ", [V]) end,
+%                          Best#neuron.train),
+%            io:format("~n")
     end.
