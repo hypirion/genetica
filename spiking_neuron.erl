@@ -18,9 +18,27 @@
 
 -record(neuron, {gtype, train, spikes, fitness=0}).
 
-parse_args([Fname, Sdm, Mutprob, Mutrate, Xover_type| _]) ->
-    [atom_to_list(Fname), utils:atom_append(Sdm, "_fitness"),
+parse_args([Fname, Sdm, Mutprob, Mutrate, Xover_type, Out_folder| _]) ->
+    Sfname = atom_to_list(Fname),
+    Out_prefix = out_prefix(Sfname, Sdm, Mutprob, Mutrate,
+                            Xover_type, Out_folder),
+    register(prefix,
+             spawn(fun() -> prefix_spitter(Out_prefix) end)),
+    [Sfname, utils:atom_append(Sdm, "_fitness"),
      atom_to_float(Mutprob), atom_to_float(Mutrate), Xover_type].
+
+out_prefix(Fname, Sdm, Mp, Mr, Xover_type, Out_folder) ->
+    Int = lists:filter(fun (X) -> $0 =< X andalso X =< $9 end, Fname),
+    Unflattened = io_lib:format("~s/~s-~s-~s-~s-~s-",
+                                [Out_folder, Int, Sdm, Xover_type, Mp, Mr]),
+    lists:flatten(Unflattened).
+
+prefix_spitter(Prefix) ->
+    receive
+        Pid ->
+            Pid ! Prefix,
+            prefix_spitter(Prefix)
+    end.
 
 random_genotype_fn(_) ->
     fun () ->
@@ -94,9 +112,10 @@ time_sum({TAi, TBi}, Acc) ->
 time_fitness(_G, GSpikes, _A, ASpikes) ->
     Zipped = utils:zip(GSpikes, ASpikes),
     N = length(Zipped),
-    Total = lists:foldl(fun time_sum/2, 0, Zipped),
+    Total = math:pow(lists:foldl(fun time_sum/2, 0, Zipped),
+                     1/?SPIKE_TIME_P),
     Tot_sp = Total + spike_penalty(GSpikes, ASpikes, N),
-    Res = math:pow(Tot_sp, 1/?SPIKE_TIME_P) / max(N, 0.00001),
+    Res = Tot_sp / max(N, 0.00001),
     1 / max(Res, 0.00001).
 
 interval_sum({{TAi_, TBi_}, {TAi, TBi}}, Acc) ->
@@ -109,9 +128,10 @@ interval_fitness(_G, GSpikes, _A, ASpikes) ->
     if N =:= 0 -> Multizipped = [];
        true -> Multizipped = utils:zip(Zipped, tl(Zipped))
     end,
-    Total = lists:foldl(fun interval_sum/2, 0, Multizipped),
+    Total = math:pow(lists:foldl(fun interval_sum/2, 0, Multizipped),
+                     1/?SPIKE_TIME_P),
     Tot_sp = Total + spike_penalty(GSpikes, ASpikes, N),
-    Res = math:pow(Tot_sp, 1/?SPIKE_TIME_P) / max((N - 1), 0.00001),
+    Res = Tot_sp / max((N - 1), 0.00001),
     1 / max(Res, 0.00001).
 
 spike_penalty(A, B, N) ->
@@ -174,10 +194,6 @@ mutation_fn([_, _, Mutprob, Mutrate | _]) ->
             end
     end.
 
-write_header() ->
-    print_float(?TIMESTEPS + 2),
-    lists:foreach(fun print_float/1, lists:seq(0, ?TIMESTEPS)).
-
 analyze_counter(N) ->
     receive
         {From, get_and_increment} ->
@@ -185,25 +201,39 @@ analyze_counter(N) ->
             analyze_counter(N+1)
     end.
 
-print_float(X) ->
-    io:format("~s", [<<X:32/big-float>>]).
+floats_to_list(<<>>, Res) ->
+    lists:reverse(Res);
+floats_to_list(<<H/float, T/binary>>, Acc) ->
+    floats_to_list(T, [H | Acc]).
 
-analyze_fn(_) ->
-    write_header(),
+analyze_fn(Fitness_fn) ->
+    prefix ! self(),
+    receive Val -> Out_prefix = Val end,
+    {ok, IOTrain} = file:open(Out_prefix ++ "train", write),
+    {ok, IOFitness} = file:open(Out_prefix ++ "fitness", write),
+    {ok, IOParams} = file:open(Out_prefix ++ "params", write),
     Comparator = fun (X, Y) ->
                          X#neuron.fitness > Y#neuron.fitness
                  end,
     Counter = spawn(fun () -> analyze_counter(1) end),
     fun (Pop) ->
+            Fits = Fitness_fn(Pop),
+            Floats = [utils:avg(Fits), utils:std_dev(Fits), lists:max(Fits),
+                      lists:min(Fits)],
+            io:format(IOFitness, "~w ~w ~w ~w~n", Floats),
             [Best | _] = lists:sort(Comparator, Pop),
             Counter ! {self(), get_and_increment},
             receive
                 {get_and_increment, N} ->
-                    print_float(N)
-            end,
-            lists:foreach(fun print_float/1, Best#neuron.train)
-%            io:format("~w ", [Best#neuron.fitness]),
-%            lists:foreach(fun (V) -> io:format("~w ", [V]) end,
-%                          Best#neuron.train),
-%            io:format("~n")
+                    if N == 200 ->
+                            lists:foreach(fun (X) ->
+                                                 io:format(IOTrain, "~w~n", [X])
+                                          end, Best#neuron.train),
+                            io:format(IOParams, "~p~n",
+                                      [floats_to_list(Best#neuron.gtype, [])]),
+                            lists:foreach(fun file:close/1,
+                                          [IOTrain, IOFitness, IOParams]);
+                       true -> ok
+                    end
+            end
     end.
