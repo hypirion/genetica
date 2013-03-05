@@ -7,10 +7,8 @@ for T in $(seq 1 4); do
         for Smd in waveform time interval; do
             for Mutr in $(seq 0.0 0.05 0.2); do
                 for Mutp in $(seq 0.1 0.1 0.5); do
-#                    echo bin/varneuron.sh plots/n-$T-$Xover-$Smd-$Mutr-$Mutp \
-#                        tmp/n-$T-$Xover-$Smd-$Mutr-$Mutp.dat $T $Smd $Mutr $Mutp $Xover
-                    bin/varneuron.sh plots/n-$T-$Xover-$Smd-$Mutr-$Mutp \
-                        tmp/n-$T-$Xover-$Smd-$Mutr-$Mutp.dat $T $Smd $Mutr $Mutp $Xover &
+#                    echo bin/varneuron.sh $T $Smd $Mutr $Mutp $Xover
+                    bin/varneuron.sh $T $Smd $Mutr $Mutp $Xover &
                 done
                 wait $!
             done
