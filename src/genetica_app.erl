@@ -5,6 +5,9 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
+start() ->
+    application:start(genetica_app).
+
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================

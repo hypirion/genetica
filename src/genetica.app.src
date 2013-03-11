@@ -1,6 +1,6 @@
 {application, genetica,
  [
-  {description, ""},
+  {description, "Evolutionary algorithm framework in Erlang."},
   {vsn, "1"},
   {registered, []},
   {applications, [
