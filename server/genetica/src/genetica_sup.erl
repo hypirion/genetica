@@ -29,7 +29,7 @@ init([]) ->
                       {genetica_request_handler, start_link, []},
                       permanent, 5000, worker, [genetica_request_handler]},
     ClientSupervisor = {client_supervisor,
-                        {genetica_client_sup, start_link, []}
+                        {genetica_client_sup, start_link, []},
                         permanent, 5000, supervisor, [genetica_client_sup]},
     RestartStrategy = {one_for_rest, 0, 1}, %% set to 4, 3600 later on.
     {ok, {RestartStrategy, [ClientSupervisor, RequestHandler]}}.
