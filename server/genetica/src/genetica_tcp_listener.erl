@@ -1,12 +1,12 @@
 %%%-------------------------------------------------------------------
-%%% File    : genetica_request_handler.erl
+%%% File    : genetica_tcp_listener.erl
 %%% Author  : Jean Niklas L'orange <jeannikl@hypirion.com>
 %%% Description : Handles requests and forwards them to the client
 %%%               supervisor
 %%%
 %%% Created : 18 Mar 2013 by Jean Niklas L'orange <jeannikl@hypirion.com>
 %%%-------------------------------------------------------------------
--module(genetica_request_handler).
+-module(genetica_tcp_listener).
 
 -behaviour(gen_server).
 %%--------------------------------------------------------------------
