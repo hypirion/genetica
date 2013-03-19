@@ -1,0 +1,5 @@
+#! /bin/sh
+rel/genetica/bin/genetica stop
+rebar compile && \
+rebar generate && \
+rel/genetica/bin/genetica start
