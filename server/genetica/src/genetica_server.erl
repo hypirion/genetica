@@ -87,8 +87,9 @@ handle_cast(stop, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
-handle_info({tcp, Socket, RawData}, State) ->
-    do_rpc(Socket, RawData),
+handle_info({tcp, Socket, RawData}, #state{lsock = LSock} = State) ->
+    do_rpc(Socket, RawData), %% Socket closed after this, listen once more
+    {ok, _Sock} = gen_tcp:accept(LSock), %% Throw away socket, wait for data ^
     {noreply, State};
 handle_info(timeout, #state{lsock = LSock} = State) ->
     {ok, _Sock} = gen_tcp:accept(LSock),
@@ -114,25 +115,18 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 do_rpc(Socket, RawData) ->
-    try
-        {M, F, A} = split_out_mfa(RawData),
-        Result = apply(M, F, A),
-        gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Result]))
-    catch
-        _Class:Err ->
-            gen_tcp:send(Socket, io_lib:fwrite("~p~n", [Err]))
-    end.
+    Raw = re:replace(RawData, "\r\n", "", [{return, list}]),
+    [Iters | _] = termify(Raw),
+    send_back(Socket, Iters).
 
-split_out_mfa(RawData) ->
-    MFA = re:replace(RawData, "\r\n$", "", [{return, list}]),
-    {match, [M, F, A]} =
-        re:run(MFA,
-               "(.*):(.*)\s*\\((.*)\s*\\)\s*.\s*$",
-                   [{capture, [1,2,3], list}, ungreedy]),
-    {list_to_atom(M), list_to_atom(F), args_to_terms(A)}.
+send_back(Socket, Iters) when Iters >= 0 ->
+    gen_tcp:send(Socket, io_lib:fwrite("~p~n", [[Iters, hello]])),
+    send_back(Socket, Iters - 1);
+send_back(Socket, _) ->
+    ok = gen_tcp:close(Socket).
 
-args_to_terms(RawArgs) ->
-    {ok, Toks, _Line} = erl_scan:string("[" ++ RawArgs ++ "]. ", 1),
+termify(Raw) ->
+    {ok, Toks, _Line} = erl_scan:string(Raw),
     {ok, Args} = erl_parse:parse_term(Toks),
     Args.
 
