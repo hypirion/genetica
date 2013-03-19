@@ -1,5 +1,5 @@
 -module(random_max).
--import(utils, [atom_to_integer/1, atom_to_float/1]).
+-import(genetica_utils, [atom_to_integer/1, atom_to_float/1]).
 -export([parse_args/1, random_genotype_fn/1, phenotype_to_genotype_fn/1,
          genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
          mutation_fn/1, analyze_fn/1]).

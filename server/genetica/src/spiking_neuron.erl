@@ -1,5 +1,5 @@
 -module(spiking_neuron).
--import(utils, [atom_to_integer/1, atom_to_float/1, clamp/3, rand_between/2]).
+-import(genetica_utils, [atom_to_integer/1, atom_to_float/1, clamp/3, rand_between/2]).
 %-export([parse_args/1, random_genotype_fn/1, phenotype_to_genotype_fn/1,
 %         genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
 %         mutation_fn/1, analyze_fn/1]).
@@ -24,7 +24,7 @@ parse_args([Fname, Sdm, Mutprob, Mutrate, Xover_type, Out_folder| _]) ->
                             Xover_type, Out_folder),
     register(prefix,
              spawn(fun() -> prefix_spitter(Out_prefix) end)),
-    [Sfname, utils:atom_append(Sdm, "_fitness"),
+    [Sfname, genetica_utils:atom_append(Sdm, "_fitness"),
      atom_to_float(Mutprob), atom_to_float(Mutrate), Xover_type].
 
 out_prefix(Fname, Sdm, Mp, Mr, Xover_type, Out_folder) ->
@@ -64,7 +64,7 @@ create_train(<<A/float, B/float, C/float, D/float, K/float>>) ->
                 end,
                 [min(New_V, ?SPIKE_THRESHOLD), New_U]
         end,
-    [V || [V, _] <- utils:iterate(?TIMESTEPS, F,
+    [V || [V, _] <- genetica_utils:iterate(?TIMESTEPS, F,
                                   [?NEURON_INIT_V, ?NEURON_INIT_U])].
 
 spike_positions(Volt_values) ->
@@ -110,7 +110,7 @@ time_sum({TAi, TBi}, Acc) ->
     Acc + Delta.
 
 time_fitness(_G, GSpikes, _A, ASpikes) ->
-    Zipped = utils:zip(GSpikes, ASpikes),
+    Zipped = genetica_utils:zip(GSpikes, ASpikes),
     N = length(Zipped),
     Total = math:pow(lists:foldl(fun time_sum/2, 0, Zipped),
                      1/?SPIKE_TIME_P),
@@ -123,10 +123,10 @@ interval_sum({{TAi_, TBi_}, {TAi, TBi}}, Acc) ->
     Acc + Interval_diff.
 
 interval_fitness(_G, GSpikes, _A, ASpikes) ->
-    Zipped = utils:zip(GSpikes, ASpikes),
+    Zipped = genetica_utils:zip(GSpikes, ASpikes),
     N = length(Zipped),
     if N =:= 0 -> Multizipped = [];
-       true -> Multizipped = utils:zip(Zipped, tl(Zipped))
+       true -> Multizipped = genetica_utils:zip(Zipped, tl(Zipped))
     end,
     Total = math:pow(lists:foldl(fun interval_sum/2, 0, Multizipped),
                      1/?SPIKE_TIME_P),
@@ -162,7 +162,7 @@ crossover_sel(G1, G2) ->
     crossover_sel(G1, G2, <<>>).
 
 crossover_sel(<<A/float, TA/binary>>, <<B/float, TB/binary>>, <<Res/binary>>) ->
-    case utils:random_bit() of
+    case genetica_utils:random_bit() of
         0 -> C = A;
         1 -> C = B
     end,
@@ -178,8 +178,8 @@ crossover_fn([_, _, _, _, sel | _]) ->
 mutation(P, <<X/float, R/binary>>, [{L, U, Stddev} | T]) ->
     Rmut = mutation(P, R, T),
     case random:uniform() =< P of
-        true -> Unclamped = utils:rand_gauss(X, Stddev),
-                Clamped = utils:clamp(Unclamped, L, U),
+        true -> Unclamped = genetica_utils:rand_gauss(X, Stddev),
+                Clamped = genetica_utils:clamp(Unclamped, L, U),
                 <<Clamped/float, Rmut/binary>>;
         false -> <<X/float, Rmut/binary>>
     end;
@@ -218,7 +218,7 @@ analyze_fn(Fitness_fn) ->
     Counter = spawn(fun () -> analyze_counter(1) end),
     fun (Pop) ->
             Fits = Fitness_fn(Pop),
-            Floats = [utils:avg(Fits), utils:std_dev(Fits), lists:max(Fits),
+            Floats = [genetica_utils:avg(Fits), genetica_utils:std_dev(Fits), lists:max(Fits),
                       lists:min(Fits)],
             io:format(IOFitness, "~w ~w ~w ~w~n", Floats),
             [Best | _] = lists:sort(Comparator, Pop),

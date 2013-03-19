@@ -1,5 +1,5 @@
 -module(one_max).
--import(utils, [atom_to_integer/1, atom_to_float/1]).
+-import(genetica_utils, [atom_to_integer/1, atom_to_float/1]).
 -export([parse_args/1, random_genotype_fn/1, phenotype_to_genotype_fn/1,
          genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
          mutation_fn/1, analyze_fn/1]).
@@ -11,7 +11,7 @@ parse_args([Bits, Mutprob, Mutrate, What_crossover, Crossprob | _]) ->
 random_genotype_fn([N | _]) ->
     fun () ->
             conversions:list_to_bitstr(
-              utils:repeatedly(N, fun utils:random_bit/0))
+              genetica_utils:repeatedly(N, fun genetica_utils:random_bit/0))
     end.
 
 phenotype_to_genotype_fn(_) ->
@@ -47,7 +47,7 @@ crossover2(G1, G2) ->
     N = random:uniform(bit_size(G1)),
     <<AH:N, AT/bitstring>> = G1,
     <<BH:N, BT/bitstring>> = G2,
-    case utils:random_bit() of
+    case genetica_utils:random_bit() of
         0 -> <<BH:N, AT/bitstring>>;
         1 -> <<AH:N, BT/bitstring>>
     end.
@@ -55,7 +55,7 @@ crossover2(G1, G2) ->
 crossover_fn([_, _, _, 1, P | _]) ->
     fun (G1, G2) ->
             {NG1, NG2} = crossover1(G1, G2, P),
-            case utils:random_bit() of
+            case genetica_utils:random_bit() of
                 0 -> NG1;
                 1 -> NG2
             end
@@ -66,7 +66,7 @@ crossover_fn([_, _, _, 2 | _]) ->
 mutation(Mutrate, <<N:1,Rest/bitstring>>) ->
     Rmut = mutation(Mutrate, Rest),
     case random:uniform() =< Mutrate of
-        true -> Mutation = utils:random_bit(),
+        true -> Mutation = genetica_utils:random_bit(),
                 <<Mutation:1, Rmut/bitstring>>;
         false -> <<N:1, Rmut/bitstring>>
     end;
@@ -83,7 +83,7 @@ mutation_fn([_, Mutprob, Mutrate | _]) ->
 analyze_fn(Fitness_fn) ->
     fun (Pop) ->
             Fits = Fitness_fn(Pop),
-            Floats = [utils:avg(Fits), utils:std_dev(Fits), lists:max(Fits),
+            Floats = [genetica_utils:avg(Fits), genetica_utils:std_dev(Fits), lists:max(Fits),
                       lists:min(Fits)],
             io:format("~w ~w ~w ~w~n", Floats)
     end.

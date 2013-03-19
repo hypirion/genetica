@@ -28,7 +28,7 @@ roulette_selection_fn(_) ->
             Val = random:uniform()*N,
             {indiv, I,
              fitness, F,
-             slots, _} = utils:ffilter(Slotted, in_interval_fn(Val)),
+             slots, _} = genetica_utils:ffilter(Slotted, in_interval_fn(Val)),
             {indiv, I,
              fitness, F}
     end.
@@ -37,7 +37,7 @@ roulette_selection_fn(_) ->
 %% with K individuals. May return the same individual.
 tournament_selection_fn([K, P | _]) ->
     fun (Plist) ->
-            Randomized = utils:shuffle(Plist),
+            Randomized = genetica_utils:shuffle(Plist),
             case random:uniform() =< P of
                 true -> hd(Randomized);
                 false -> Firsts = lists:sublist(Randomized, K),
@@ -61,8 +61,8 @@ fitness_scale(Plist, _) ->
 
 sigma_scale(Plist, _) ->
     Fitnesses = lists:map(fun fitness/1, Plist),
-    Avg = utils:avg(Fitnesses),
-    Stddev = utils:std_dev(Fitnesses, Avg),
+    Avg = genetica_utils:avg(Fitnesses),
+    Stddev = genetica_utils:std_dev(Fitnesses, Avg),
     case Stddev =< 0.1 of
         false -> Scalefn = fun (I) -> 1 + max(0, (I - Avg)/(2 * Stddev)) end;
         true -> Scalefn = fun(_) -> 1 end
@@ -70,9 +70,9 @@ sigma_scale(Plist, _) ->
     lists:keymap(Scalefn, 4, Plist).
 
 boltzmann_scale(Plist, [T]) ->
-    Efit = lists:map(utils:comp([fun (F) -> math:exp(F/T) end,
+    Efit = lists:map(genetica_utils:comp([fun (F) -> math:exp(F/T) end,
                                  fun fitness/1]), Plist),
-    Avg = utils:avg(Efit),
+    Avg = genetica_utils:avg(Efit),
     [{indiv, I, fitness, F / Avg} ||
         {{indiv, I, fitness, _}, F} <- lists:zip(Plist, Efit)].
 
@@ -103,14 +103,14 @@ full_replacement_fn(Make_child, _, Add_fitness, [Popsize | _]) ->
     fun (Pop, Scale_args) ->
             FPop = Add_fitness(Pop, Scale_args),
             Make_child_from_pop = fun () -> Make_child(FPop) end,
-            utils:repeatedly(Popsize, Make_child_from_pop)
+            genetica_utils:repeatedly(Popsize, Make_child_from_pop)
     end.
 
 over_production_fn(Make_child, Selection_fn, Add_fitness, [Popsize, M | _]) ->
     fun (Pop, Scale_args) ->
             FPop = Add_fitness(Pop, Scale_args),
             Make_child_from_pop = fun () -> Make_child(FPop) end,
-            Cpop = utils:repeatedly(Popsize + M, Make_child_from_pop),
+            Cpop = genetica_utils:repeatedly(Popsize + M, Make_child_from_pop),
             FCpop = Add_fitness(Cpop, Scale_args),
             pick_best(Popsize, FCpop, Selection_fn)
     end.
@@ -120,7 +120,7 @@ generational_mixing_fn(Make_child, Selection_fn, Add_fitness,
     fun (Pop, Scale_args) ->
             FPop = Add_fitness(Pop, Scale_args),
             Make_child_from_pop = fun () -> Make_child(FPop) end,
-            Cpop = utils:repeatedly(Popsize, Make_child_from_pop),
+            Cpop = genetica_utils:repeatedly(Popsize, Make_child_from_pop),
             FCpop = Add_fitness(Cpop, Scale_args),
             Cbest = pick_best(Popsize - M, FCpop, Selection_fn),
             Pbest = pick_best(M, FPop, Selection_fn),

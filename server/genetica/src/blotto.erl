@@ -1,5 +1,5 @@
 -module(blotto).
--import(utils, [atom_to_integer/1, atom_to_float/1]).
+-import(genetica_utils, [atom_to_integer/1, atom_to_float/1]).
 -export([parse_args/1, random_genotype_fn/1, phenotype_to_genotype_fn/1,
          genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
          mutation_fn/1, analyze_fn/1]).
@@ -12,7 +12,7 @@ parse_args([B, Rf, Lf, Mutprob, Mutrate, Crossprob | _]) ->
 random_genotype_fn([B | _]) ->
     fun () ->
             conversions:list_to_bitstr(
-              utils:repeatedly(B*?BIT_PER_BATTLE, fun utils:random_bit/0))
+              genetica_utils:repeatedly(B*?BIT_PER_BATTLE, fun genetica_utils:random_bit/0))
     end.
 
 count_bits(<<N:1,Rest/bitstring>>, Sum) ->
@@ -88,7 +88,7 @@ analyze_fn(Fitness_fn) ->
     fun (Pop) ->
             Fits = Fitness_fn(Pop),
             {_, {strat, S, gtype, _}} = lists:max(lists:zip(Fits, Pop)),
-            Floats = [utils:std_dev(Fits), lists:max(Fits), lists:min(Fits),
-                      utils:avg(lists:map(fun strategy_entropy/1, Pop)), S],
+            Floats = [genetica_utils:std_dev(Fits), lists:max(Fits), lists:min(Fits),
+                      genetica_utils:avg(lists:map(fun strategy_entropy/1, Pop)), S],
             io:format("~w ~w ~w ~w ~w~n", Floats)
     end.

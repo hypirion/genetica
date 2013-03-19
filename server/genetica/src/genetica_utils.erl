@@ -1,4 +1,4 @@
--module(utils).
+-module(genetica_utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
          comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2,
          pmap/2, clamp/3, rand_between/2, iterate/3, rand_gauss/2, zip/2]).

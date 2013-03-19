@@ -1,7 +1,7 @@
 -module(main).
 -export([start/1]).
 -import(conversions, [bitstr_to_list/1, list_to_bitstr/1]).
--import(utils, [atom_to_integer/1, atom_to_float/1, atom_append/2]).
+-import(genetica_utils, [atom_to_integer/1, atom_to_float/1, atom_append/2]).
 -import(selection_mechanisms, [roulette_selection_fn/2, sigma_scale/2,
                                boltzmann_scale/2, rank_scale/2]).
 
@@ -35,7 +35,7 @@ start([AGenerations, APopcount, ASel_method, AK, AP,
                   Analyzefn, Devel_and_select).
 
 generate_random_pop(Popcount, Rand_gtype, GtoP) ->
-    [GtoP(Genome) || Genome <- utils:repeatedly(Popcount, Rand_gtype)].
+    [GtoP(Genome) || Genome <- genetica_utils:repeatedly(Popcount, Rand_gtype)].
 
 genetica_loop(0, _Pop, _Tvals, _Analyzefn, _Develop_and_select) ->
     done;
