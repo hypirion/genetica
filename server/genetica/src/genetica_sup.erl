@@ -25,5 +25,5 @@ init([]) ->
     Server = {genetica_server, {genetica_server, start_link, []},
               permanent, 2000, worker, [genetica_server]},
     Children = [Server],
-    RestartStrategy = {one_for_one, 0, 1},
+    RestartStrategy = {one_for_one, 10, 10},
     {ok, {RestartStrategy, Children}}.
