@@ -24,9 +24,9 @@ start_link() ->
 %% Supervisor callbacks
 %% ===================================================================
 
-init([]) ->
+init([Port, Module]) ->
     Listener = {listener,
-                {genetica_tcp_listener, start_link, []},
+                {genetica_tcp_listener, start_link, [Port, Module]},
                 permanent, 5000, worker, [genetica_tcp_listener]},
     ClientSupervisor = {client_supervisor,
                         {genetica_client_sup, start_link, []},
