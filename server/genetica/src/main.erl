@@ -1,18 +1,15 @@
 -module(main).
--export([start/1]).
+-export([start/2]).
 -import(conversions, [bitstr_to_list/1, list_to_bitstr/1]).
 -import(genetica_utils, [atom_to_integer/1, atom_to_float/1, atom_append/2]).
 -import(selection_mechanisms, [roulette_selection_fn/2, sigma_scale/2,
                                boltzmann_scale/2, rank_scale/2]).
 
-start([AGenerations, APopcount, ASel_method, AK, AP,
-       AEval_method, AProtocol, AM, Module | T]) ->
+start(Sock, [Generations, Popcount, ASel_method, K, P,
+             AEval_method, AProtocol, M, Module | T]) ->
     %% Make run truly random
     random:seed(now()),
     %% Argument parsing from here on
-    [Generations, Popcount, K, M] =
-        [atom_to_integer(X) || X <- [AGenerations, APopcount, AK, AM]],
-    P = atom_to_float(AP),
     [Sel_metfn, Eval_method, Protocol] =
         [atom_append(X, Y) ||
             {X, Y} <- lists:zip([ASel_method, AEval_method, AProtocol],
@@ -26,7 +23,7 @@ start([AGenerations, APopcount, ASel_method, AK, AP,
     Devel_and_select = selection:Protocol(Make_child, Sel_method, 
                                           Fitness, [Popcount, M]),
     Initpop = generate_random_pop(Popcount, R, GP),
-    Analyzefn = Module:analyze_fn(only_fitness_fn(F)),
+    Analyzefn = Module:analyze_fn(Sock, only_fitness_fn(F)),
     Analyzefn(Initpop),
     Init_T = Generations/2,
     Cooldown = math:pow(7, 4/(3*Generations)) *
