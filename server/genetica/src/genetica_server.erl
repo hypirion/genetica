@@ -88,7 +88,7 @@ handle_cast(stop, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
 handle_info({tcp, Socket, RawData}, #state{lsock = LSock} = State) ->
-    do_rpc(Socket, RawData), %% Socket closed after this, listen once more
+    do_rpc(Socket, RawData), %% Humm, would be nice to do this async
     {ok, _Sock} = gen_tcp:accept(LSock), %% Throw away socket, wait for data ^
     {noreply, State};
 handle_info(timeout, #state{lsock = LSock} = State) ->
