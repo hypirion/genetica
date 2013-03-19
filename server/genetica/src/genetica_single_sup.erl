@@ -60,7 +60,7 @@ init([]) ->
     %% a cast, as we'll have to respond to the shutdown call the supervisor
     %% sends us)
     TransportWorker = {transport,
-                       {genetica_transport_worker, start_link, []},
+                       {genetica_tcp_worker, start_link, []},
                        %% Hurr, need to pass the communication layer.
                        temporary, 2000, worker, [genetica_transport_worker]},
     ComputeWorker = {compute,

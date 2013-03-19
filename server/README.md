@@ -11,10 +11,10 @@ The internal design of Genetica looks like this:
 
     genetica_app
     -> genetica_sup
-       -> genetica_request_handler
+       -> genetica_tcp_handler
        -> genetica_client_sup
           -> genetica_single_sup (multiple)
-             -> genetica_transport_worker
+             -> genetica_tcp_worker
              -> genetica_compute_worker
 
 ### `genetica_app`
