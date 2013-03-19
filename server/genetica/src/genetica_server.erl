@@ -116,8 +116,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 do_rpc(Socket, RawData) ->
     Raw = re:replace(RawData, "\r\n", "", [{return, list}]),
-    [Iters | _] = termify(Raw),
-    send_back(Socket, Iters).
+    Args = termify(Raw),
+    main:start(Socket, Args).
 
 send_back(Socket, Iters) when Iters >= 0 ->
     gen_tcp:send(Socket, io_lib:fwrite("~p~n", [[Iters, hello]])),

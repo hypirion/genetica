@@ -15,7 +15,7 @@ start(Sock, [Generations, Popcount, ASel_method, K, P,
             {X, Y} <- lists:zip([ASel_method, AEval_method, AProtocol],
                                 ["_selection_fn", "_scale", "_fn"])],
     {rand, R, p_to_g, PG, g_to_p, GP,
-     fitness, F, cross, C, mut, Mut} = fetch_fns(Module, Module:parse_args(T)),
+     fitness, F, cross, C, mut, Mut} = fetch_fns(Module, T),
     %% Parsing done
     Fitness = add_fitness_fn(F, fun selection:Eval_method/2),
     Sel_method = selection:Sel_metfn([K, P]),
@@ -29,7 +29,8 @@ start(Sock, [Generations, Popcount, ASel_method, K, P,
     Cooldown = math:pow(7, 4/(3*Generations)) *
                math:pow(1/Generations, 4/(3*Generations)),
     genetica_loop(Generations - 1, Initpop, [Generations, Init_T, Cooldown],
-                  Analyzefn, Devel_and_select).
+                  Analyzefn, Devel_and_select),
+    ok = gen_tcp:close(Sock).
 
 generate_random_pop(Popcount, Rand_gtype, GtoP) ->
     [GtoP(Genome) || Genome <- genetica_utils:repeatedly(Popcount, Rand_gtype)].
