@@ -1,8 +1,8 @@
 {application, genetica,
  [
-  {description, ""},
-  {vsn, "1"},
-  {registered, []},
+  {description, "Genetica server communicating over TCP."},
+  {vsn, "0.1.0"},
+  {registered, [genetica_sup]},
   {applications, [
                   kernel,
                   stdlib
