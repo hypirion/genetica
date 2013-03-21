@@ -99,7 +99,7 @@ actuate(Ets) ->
     [{c, _, #vstate{o = C}}] = ets:lookup(Ets, c),
     [{d, _, #vstate{o = D}}] = ets:lookup(Ets, d),
     [{tpos, OldPos}] = ets:lookup(Ets, tpos),
-    RawPos = OldPos + speed(D) - speed(C),
+    RawPos = OldPos + clamp(round(5*(D-C)), -4, 4),
     if RawPos < 0 ->
             NewPos = RawPos + ?AREA_WIDTH;
        RawPos >= ?AREA_WIDTH ->
