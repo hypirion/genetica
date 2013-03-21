@@ -50,9 +50,11 @@ fit_value(X, List) ->
 gen_fit(G) ->
     Res = simulate_run(G),
     Avoids = lists:filter(fun ({X, _}) -> X =:= avoid end, Res),
+    ALen = length(Avoids),
     Captures = lists:filter(fun ({X, _}) -> X =:= capture end, Res),
-    Avs = fit_value(true, Avoids),
-    Capts = fit_value(true, Captures),
+    CLen = length(Captures),
+    Avs = fit_value(true, Avoids)/ALen * 1/3 * ?NOF_BLOCKS,
+    Capts = fit_value(true, Captures)/CLen * 2/3 * ?NOF_BLOCKS,
 %    io:format("~p -- ~p~n", [Avs, Capts]),
     math:sqrt(Avs) + Capts.
 
