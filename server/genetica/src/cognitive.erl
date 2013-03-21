@@ -41,13 +41,10 @@ phenotype_to_genotype_fn(_) ->
 
 
 fit_value(X, List) ->
-    F = fun ({_, Y}, {Fit, Acc}) when Y =:= X ->
-                {Fit + Acc, Acc + 1};
-            ({_, Y}, {Fit, _Acc}) when Y =/= X ->
-                {Fit, 1}
+    F = fun({_, Y}) when Y =:= X -> 1;
+           (_) -> 0
         end,
-    {Tot, _} = lists:foldr(F, {0, 1}, List),
-    Tot.
+    lists:sum(lists:map(F, List)).
 
 %%% Fitness function stuff
 gen_fit(G) ->
