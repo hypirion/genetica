@@ -1,7 +1,8 @@
 -module(genetica_utils).
 -export([repeatedly/2, random_bit/0, avg/1, std_dev/1, std_dev/2, ffilter/2,
          comp/1, shuffle/1, atom_to_integer/1, atom_to_float/1, atom_append/2,
-         pmap/2, clamp/3, rand_between/2, iterate/3, rand_gauss/2, zip/2]).
+         pmap/2, clamp/3, rand_between/2, iterate/3, rand_gauss/2, zip/2,
+         pforeach/2]).
 
 repeatedly(0, _) ->
     [];
@@ -70,21 +71,7 @@ rand_between(Lower, Upper) ->
     Diff = Upper - Lower,
     Lower + Diff * random:uniform().
 
-%% Parallel map
-pmap(F, L) ->
-    S = self(),
-    Pids = lists:map(fun(I) -> spawn(fun() -> pmap_f(S, F, I) end) end, L),
-    pmap_harvest(Pids).
 
-pmap_harvest([H|T]) ->
-    receive
-        {H, Ret} -> [Ret | pmap_harvest(T)]
-    end;
-pmap_harvest([]) ->
-    [].
-
-pmap_f(Parent, F, I) ->
-    Parent ! {self(), (catch F(I))}.
 
 iterate(N, F, Init) ->
     iterate(N, F, Init, [Init]).
@@ -111,3 +98,65 @@ zip([A | RA], [B | RB], Acc) ->
     zip(RA, RB, [{A, B} | Acc]);
 zip(_, _, Acc) ->
     lists:reverse(Acc).
+
+p_accept(4) ->
+    receive
+        done ->
+            p_accept(3)
+    end;
+p_accept(0) ->
+    receive
+        {Pid, start} ->
+            Pid ! {self(), ok},
+            p_accept(1);
+        {Pid, wait} ->
+            Pid ! {self(), finished}
+    end;
+p_accept(X) ->
+    receive
+        {Pid, start} ->
+            Pid ! {self(), ok},
+            p_accept(X+1);
+        done ->
+            p_accept(X-1)
+    end.
+
+p_acceptor() ->
+    p_accept(0).
+
+pforeach(F, L) ->
+    S = self(),
+    Acceptor = spawn(fun p_acceptor/0),
+    PF = fun (I) ->
+                 Acceptor ! {S, start},
+                 receive
+                     {_, ok} -> ok
+                 end,
+                spawn(fun() ->
+                              F(I),
+                              Acceptor ! done
+                      end)
+         end,
+    lists:foreach(PF, L),
+    Acceptor ! {S, wait},
+    receive
+        {Acceptor, finished} ->
+            ok
+    end.
+
+
+%% Parallel map
+pmap(F, L) ->
+    S = self(),
+    Pids = lists:map(fun(I) -> spawn(fun() -> pmap_f(S, F, I) end) end, L),
+    pmap_harvest(Pids).
+
+pmap_harvest([H|T]) ->
+    receive
+        {H, Ret} -> [Ret | pmap_harvest(T)]
+    end;
+pmap_harvest([]) ->
+    [].
+
+pmap_f(Parent, F, I) ->
+    Parent ! {self(), (catch F(I))}.

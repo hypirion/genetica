@@ -200,7 +200,8 @@ refit(#ptype{gtype = G, ref = Ref}) ->
 
 setup_ets() ->
     case ets:info(genetica_cognitive_ets) of
-        undefined -> ets:new(genetica_cognitive_ets, [set, named_table]);
+        undefined -> ets:new(genetica_cognitive_ets,
+                             [set, named_table, public]);
         _ -> nil
     end,
     ok.
@@ -268,7 +269,7 @@ analyze_fn(Sock, Fitness_fn) ->
             gen_tcp:send(Sock, io_lib:fwrite("~w~n", [Floats])),
             ets:delete_all_objects(genetica_cognitive_ets),
             %% ^ hack, flip over to gen_server for next task.
-            lists:foreach(fun refit/1, Pop),
+            ok = genetica_utils:pforeach(fun refit/1, Pop),
             ok
     end.
 
