@@ -1,9 +1,8 @@
 -module(cognitive).
--import(genetica_utils, [clamp/3, rand_between/2, zip/2]).
+-import(genetica_utils, [clamp/3, rand_between/2]).
 -export([random_genotype_fn/1, phenotype_to_genotype_fn/1,
          genotype_to_phenotype_fn/1, fitness_fn/1, crossover_fn/1,
          mutation_fn/1, analyze_fn/2]).
--compile(export_all).
 
 -record(ptype, {ref, gtype}).
 -record(vertex, {name, tau, sigma, gain}).
@@ -41,9 +40,25 @@ phenotype_to_genotype_fn(_) ->
     end.
 
 
+fit_value(X, List) ->
+    F = fun ({_, Y}, {Fit, Acc}) when Y =:= X ->
+                {Fit + Acc, Acc + 1};
+            ({_, Y}, {Fit, _Acc}) when Y =/= X ->
+                {Fit, 1}
+        end,
+    {Tot, _} = lists:foldr(F, {0, 1}, List),
+    Tot.
+
 %%% Fitness function stuff
-gen_fit(_G) ->
-    rand_between(0, 100).
+gen_fit(G) ->
+    Res = simulate_run(G),
+    Avoids = lists:filter(fun ({X, _}) -> X =:= avoid end, Res),
+    Captures = lists:filter(fun ({X, _}) -> X =:= capture end, Res),
+    Avs = fit_value(true, Avoids),
+    Capts = fit_value(true, Captures),
+%    io:format("~p -- ~p~n", [Avs, Capts]),
+    math:sqrt(Avs) + Capts.
+
 
 new_block(Ets) ->
     ets:insert(Ets, #block{size = random:uniform(?BLOCK_MAX_SIZE),
@@ -147,9 +162,9 @@ block_run(Ets) ->
     case ets:lookup(Ets, block) of
         [#block{size=S, y=0, x=_}] ->
             if S >= ?TRACKER_SIZE ->
-                    {avoid, not lists:any(fun(X) -> X =:= 1 end, Sensed)};
+                    {avoid, lists:sum(Sensed) =:= 0};
                S < ?TRACKER_SIZE ->
-                    {capture, lists:all(fun(X) -> X =:= 1 end, Sensed)}
+                    {capture, lists:sum(Sensed) =:= S}
             end
     end.
 
@@ -174,13 +189,11 @@ simulate_run(G) ->
     ets:insert(Ets, {fitness, 0}),
     new_block(Ets),
     Res = genetica_utils:repeatedly(?NOF_BLOCKS, fun () -> block_run(Ets) end),
-    io:format("~p~n", [Res]),
-    ets:delete(Ets).
+%    io:format("~p~n", [Res]),
+    ets:delete(Ets),
+    Res.
 
-
-
-
-refit(#ptype{gtype = G, ref = Ref} = P) ->
+refit(#ptype{gtype = G, ref = Ref}) ->
     Fitness = gen_fit(G),
     ets:insert(genetica_cognitive_ets, {Ref, Fitness}),
     ok.
@@ -211,12 +224,39 @@ fitness_fn(_) ->
 
 crossover_fn(_) ->
     fun (G1, G2) ->
-            G1
+            case genetica_utils:random_bit() of
+                1 -> B = lists:zip(G1, G2);
+                0 -> B = lists:zip(G2, G1)
+            end,
+            lists:map(fun ({X, Y}) ->
+                              case random:uniform() < 0.9 of
+                                  true -> X;
+                                  false -> Y
+                              end
+                      end, B)
     end.
 
-mutation_fn(_) ->
+mutate_in([P, Divisor], Min, X, Max) ->
+    case random:uniform() < P of
+        true -> Sigma = (Max - Min)/Divisor,
+                genetica_utils:clamp(genetica_utils:rand_gauss(X, Sigma),
+                                     Min, Max);
+        false -> X
+    end.
+
+mutate(M, #vertex{tau=Tau, sigma=Sigma, gain=G} = V) ->
+    V#vertex{tau = mutate_in(M, 1, Tau, 2),
+             sigma = mutate_in(M, -10, Sigma, 0),
+             gain = mutate_in(M, 1, G, 5)};
+mutate(M, Weight) ->
+    mutate_in(M, -5, Weight, 5).
+
+mutation_fn([P, Divisor | _]) ->
+    M = fun (G) ->
+                mutate([P, Divisor], G)
+        end,
     fun (Geno) ->
-            Geno
+            lists:map(M, Geno)
     end.
 
 analyze_fn(Sock, Fitness_fn) ->
@@ -232,7 +272,13 @@ analyze_fn(Sock, Fitness_fn) ->
             ok
     end.
 
-
 test() ->
     random:seed(now()),
-    simulate_run((random_genotype_fn(nil))()).
+    Fn = random_genotype_fn(nil),
+    G1 = Fn(), G2 = Fn(),
+    X = crossover_fn(nil),
+    M = mutation_fn([1.0, 100]),
+    M(G1),
+    io:format("~p~n~p~n", [G1, M(G1)]),
+    ok.
+
