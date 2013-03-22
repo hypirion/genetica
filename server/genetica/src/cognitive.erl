@@ -49,7 +49,7 @@ gen_fit(G) ->
     Avs = lists:sum(Avoids)/ALen * ?NOF_BLOCKS,
     Capts = lists:sum(Captures)/CLen * ?NOF_BLOCKS,
 %    io:format("~p -- ~p~n", [Avs, Capts]),
-    ?NOF_BLOCKS + Avs - Capts.
+    ?NOF_BLOCKS - Avs + Capts.
 
 
 new_block(Ets) ->
@@ -84,6 +84,9 @@ actuate(Ets) ->
     [{c, _, #vstate{o = C}}] = ets:lookup(Ets, c),
     [{d, _, #vstate{o = D}}] = ets:lookup(Ets, d),
     [{tpos, OldPos}] = ets:lookup(Ets, tpos),
+    Delta = abs(clamp(round(5*(D-C)), -4, 4)),
+    [{delta, X}] = ets:lookup(Ets, delta),
+    ets:insert(Ets, {delta, X + Delta}),
     RawPos = OldPos + clamp(round(5*(D-C)), -4, 4),
     if RawPos < 0 ->
             NewPos = RawPos + ?AREA_WIDTH;
@@ -139,23 +142,32 @@ step(Ets) ->
 %    io:format("~P~n~n", [ets:match_object(Ets, '_'), 100]),
     nil.
 
+reset_tracker(Ets) ->
+    ets:insert(Ets,
+               [case ets:lookup(Ets, V) 
+                    of [{X, Y, _}] ->
+                        {X, Y, #vstate{}}
+                end || V <- [a, b, c, d]]).
+
 block_run(Ets) ->
     new_block(Ets),
     genetica_utils:repeatedly(?AREA_HEIGHT, fun() -> step(Ets) end),
     sense(Ets),
     Sensed = ets:select(Ets, ?ETS_INTEGERS),
+    reset_tracker(Ets),
     case ets:lookup(Ets, block) of
         [#block{size=S, y=0, x=_}] ->
             if S >= ?TRACKER_SIZE ->
-                    {avoid, lists:sum(Sensed)/?TRACKER_SIZE};
+                    {avoid, math:pow(lists:sum(Sensed)/?TRACKER_SIZE, 2)};
                S < ?TRACKER_SIZE ->
-                    {capture, lists:sum(Sensed)/S}
+                    {capture, math:pow(lists:sum(Sensed)/S, 2)}
             end
     end.
 
 simulate_run(G) ->
 %    io:format("whole:~n~p~n~n", [G]),
     Ets = ets:new(x, [set]),
+    ets:insert(Ets, {delta, 0}),
     Firsts = lists:zip([#edge{from=F, to=T} || T <- [a, b],
                                                F <- [1, 2, 3, 4, 5, a, b]],
                        lists:sublist(G, 2*7)),
@@ -174,6 +186,8 @@ simulate_run(G) ->
     ets:insert(Ets, {fitness, 0}),
     Res = genetica_utils:repeatedly(?NOF_BLOCKS, fun () -> block_run(Ets) end),
 %    io:format("~p~n", [Res]),
+%    [{delta, Delta}] = ets:lookup(Ets, delta),
+%    io:format("Total movement this run: ~p~n", [Delta]),
     ets:delete(Ets),
     Res.
 
@@ -252,18 +266,9 @@ analyze_fn(Sock, Fitness_fn) ->
             gen_tcp:send(Sock, io_lib:fwrite("~w~n", [Floats])),
             ets:delete_all_objects(genetica_cognitive_ets),
             %% ^ hack, flip over to gen_server for next task.
+            random:seed(now()),
             Refit = genetica_utils:pmap(fun refit/1, Pop),
             ets:insert(genetica_cognitive_ets, Refit),
             ok
     end.
-
-test() ->
-    random:seed(now()),
-    Fn = random_genotype_fn(nil),
-    G1 = Fn(), G2 = Fn(),
-    X = crossover_fn(nil),
-    M = mutation_fn([1.0, 100]),
-    M(G1),
-    io:format("~p~n~p~n", [G1, M(G1)]),
-    ok.
 
