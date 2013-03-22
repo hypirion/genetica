@@ -220,14 +220,14 @@ fitness_fn(_) ->
             F
     end.
 
-crossover_fn(_) ->
+crossover_fn([_, _, XoverRate | _]) ->
     fun (G1, G2) ->
             case genetica_utils:random_bit() of
                 1 -> B = lists:zip(G1, G2);
                 0 -> B = lists:zip(G2, G1)
             end,
             lists:map(fun ({X, Y}) ->
-                              case random:uniform() < 0.9 of
+                              case random:uniform() < XoverRate of
                                   true -> X;
                                   false -> Y
                               end
