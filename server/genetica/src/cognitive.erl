@@ -16,6 +16,7 @@
 -define(BLOCK_MAX_SIZE, 6).
 -define(NOF_BLOCKS, 40).
 -define(ETS_INTEGERS, [{{'$1','$2'},[{is_integer,'$1'}],['$2']}]).
+-define(ETS_REF_DELETE, [{{'$1','_'},[],[{is_reference,'$1'}]}]).
 
 rand_node(Name) ->
     #vertex{name = Name, sigma = rand_between(-10, 0),
@@ -320,10 +321,10 @@ analyze_fn(Sock, Fitness_fn) ->
             Floats = [genetica_utils:avg(Fits), genetica_utils:std_dev(Fits),
                       lists:max(Fits), lists:min(Fits), Best],
             gen_tcp:send(Sock, io_lib:fwrite("~w~n", [Floats])),
-            ets:delete_all_objects(genetica_cognitive_ets),
-            %% ^ hack, flip over to gen_server for next task.
             random:seed(now()),
             Refit = genetica_utils:pmap(fun refit/1, Pop),
+            ets:select_delete(genetica_cognitive_ets, ?ETS_REF_DELETE),
+            %% ^ hack, flip over to gen_server for next task.
             ets:insert(genetica_cognitive_ets, Refit),
             ok
     end.
