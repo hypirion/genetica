@@ -64,7 +64,9 @@ brute_run(G) ->
                  S <- lists:seq(1, ?BLOCK_MAX_SIZE),
                  X <- lists:seq(1, ?AREA_WIDTH)],
     Ets = init_local_ets(G),
-    lists:map(fun (B) -> single_brute(Ets, B) end, Blocks).
+    Res = lists:map(fun (B) -> single_brute(Ets, B) end, Blocks),
+    ets:delete(Ets),
+    Res.
 
 single_brute(Ets, Block) ->
     ets:insert(Ets, Block),
@@ -161,7 +163,8 @@ new_vstate(Ets, X) ->
     DY = (Sum + Sigma - OldY)/Tau,
     Y = OldY + DY,
     O = 1 / (1 + math:exp(-G * Y)),
-    {X, V, #vstate{o=O, y=Y}}.
+    ets:insert(Ets, {X, V, #vstate{o=O, y=Y}}),
+    ok.
 
 cognitive_step(Ets) ->
     [new_vstate(Ets, Name) || Name <- [a, b, c, d]].
@@ -172,10 +175,9 @@ move_block(Ets) ->
 
 step(Ets) ->
     sense(Ets),
-    VertexStates = cognitive_step(Ets),
+    cognitive_step(Ets),
     actuate(Ets),
     move_block(Ets),
-    ets:insert(Ets, VertexStates),
 %    io:format("~P~n~n", [ets:match_object(Ets, '_'), 100]),
     nil.
 
