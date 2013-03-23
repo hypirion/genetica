@@ -40,17 +40,53 @@ phenotype_to_genotype_fn(_) ->
     end.
 
 %%% Fitness function stuff
-gen_fit(G) ->
-    Res = simulate_run(G),
+results_to_fitness(Res) ->
     Avoids = [Y || {X, Y} <- Res, X =:= avoid],
     ALen = length(Avoids),
     Captures = [Y || {X, Y} <- Res, X =:= capture],
     CLen = length(Captures),
-    Avs = lists:sum(Avoids)/ALen * ?NOF_BLOCKS,
-    Capts = lists:sum(Captures)/CLen * ?NOF_BLOCKS,
+    Avs = lists:sum(Avoids),
+    Capts = lists:sum(Captures),
 %    io:format("~p -- ~p~n", [Avs, Capts]),
-    ?NOF_BLOCKS - Avs + Capts.
+    Capts + Avs.
 
+gen_fit(G) ->
+    Res = simulate_run(G),
+    results_to_fitness(Res).
+
+brute_fit(G) ->
+    Res = brute_run(G),
+    results_to_fitness(Res).
+
+brute_run(G) ->
+    Blocks = [#block{size = S, x = X, y = ?AREA_HEIGHT} ||
+                 S <- lists:seq(1, ?BLOCK_MAX_SIZE),
+                 X <- lists:seq(1, ?AREA_WIDTH)],
+    Ets = init_local_ets(G),
+    lists:map(fun (B) -> single_brute(Ets, B) end, Blocks).
+
+single_brute(Ets, Block) ->
+    ets:insert(Ets, Block),
+    ets:insert(Ets, {tpos, 0}),
+    genetica_utils:repeatedly(?AREA_HEIGHT, fun() -> step(Ets) end),
+    sense(Ets),
+    Sensed = ets:select(Ets, ?ETS_INTEGERS),
+    reset_tracker(Ets),
+    case ets:lookup(Ets, block) of
+        [#block{size=S, y=0, x=_}] ->
+            if S >= ?TRACKER_SIZE ->
+                    {avoid, case lists:sum(Sensed) of
+                                0 -> 1;
+                                ?TRACKER_SIZE -> 0;
+                                _ -> 0.1
+                            end};
+               S < ?TRACKER_SIZE ->
+                    {capture, case lists:sum(Sensed) of
+                                  S -> 1;
+                                  _ -> 0
+                              end}
+            end
+    end.
 
 new_block(Ets) ->
     ets:insert(Ets, #block{size = random:uniform(?BLOCK_MAX_SIZE),
@@ -144,7 +180,7 @@ step(Ets) ->
 
 reset_tracker(Ets) ->
     ets:insert(Ets,
-               [case ets:lookup(Ets, V) 
+               [case ets:lookup(Ets, V)
                     of [{X, Y, _}] ->
                         {X, Y, #vstate{}}
                 end || V <- [a, b, c, d]]).
@@ -158,13 +194,20 @@ block_run(Ets) ->
     case ets:lookup(Ets, block) of
         [#block{size=S, y=0, x=_}] ->
             if S >= ?TRACKER_SIZE ->
-                    {avoid, math:pow(lists:sum(Sensed)/?TRACKER_SIZE, 2)};
+                    {avoid, case lists:sum(Sensed) of
+                                0 -> 1;
+                                ?TRACKER_SIZE -> 0;
+                                _ -> 0.1
+                            end};
                S < ?TRACKER_SIZE ->
-                    {capture, math:pow(lists:sum(Sensed)/S, 2)}
+                    {capture, case lists:sum(Sensed) of
+                                  S -> 1;
+                                  _ -> 0
+                              end}
             end
     end.
 
-simulate_run(G) ->
+init_local_ets(G) ->
 %    io:format("whole:~n~p~n~n", [G]),
     Ets = ets:new(x, [set]),
     ets:insert(Ets, {delta, 0}),
@@ -183,34 +226,47 @@ simulate_run(G) ->
     ets:insert(Ets, [{Name, Vertex, #vstate{}} ||
                         Vertex = #vertex{name=Name} <- Vertices]),
     ets:insert(Ets, {tpos, 0}),
-    ets:insert(Ets, {fitness, 0}),
+    Ets.
+
+simulate_run(G) ->
+    Ets = init_local_ets(G),
     Res = genetica_utils:repeatedly(?NOF_BLOCKS, fun () -> block_run(Ets) end),
-%    io:format("~p~n", [Res]),
-%    [{delta, Delta}] = ets:lookup(Ets, delta),
-%    io:format("Total movement this run: ~p~n", [Delta]),
     ets:delete(Ets),
     Res.
 
-refit(#ptype{gtype = G, ref = Ref}) ->
-    Fitness = gen_fit(G),
-    {Ref, Fitness}.
+refit(G) ->
+    [{simtype, S}] = ets:lookup(genetica_cognitive_ets, simtype),
+    refit(S, G).
 
-setup_ets() ->
+refit(random, #ptype{gtype = G, ref = Ref}) ->
+    Fitness = gen_fit(G),
+    {Ref, Fitness};
+refit(brute, #ptype{gtype = G, ref = Ref}) ->
+    case ets:lookup(genetica_cognitive_ets, Ref) of
+        [] ->
+            Fitness = brute_fit(G),
+            {Ref, Fitness};
+        [{Ref, Fitness}] ->
+            {Ref, Fitness}
+    end.
+
+init_global_ets(SimType) ->
     case ets:info(genetica_cognitive_ets) of
         undefined -> ets:new(genetica_cognitive_ets,
                              [set, named_table]);
         _ -> nil
     end,
+    ets:insert(genetica_cognitive_ets, {simtype, SimType}),
     ok.
 
 
-genotype_to_phenotype_fn(_) ->
-    setup_ets(),
+genotype_to_phenotype_fn([_, _, _, _, SimType | _]) ->
+    init_global_ets(SimType),
     %% Generate fitness fn here?
     fun (G) ->
             Ref = erlang:make_ref(),
             P = #ptype{gtype = G, ref = Ref},
-            ets:insert(genetica_cognitive_ets, refit(P)),
+            ets:insert(genetica_cognitive_ets, refit(SimType, P)),
             P
     end.
 
