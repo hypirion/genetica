@@ -13,6 +13,7 @@
 -define(AREA_HEIGHT, 15).
 -define(AREA_WIDTH, 30).
 -define(TRACKER_SIZE, 5).
+-define(TRACKER_MAX_SPEED, 7).
 -define(BLOCK_MAX_SIZE, 6).
 -define(NOF_BLOCKS, 40).
 -define(ETS_INTEGERS, [{{'$1','$2'},[{is_integer,'$1'}],['$2']}]).
@@ -46,10 +47,10 @@ results_to_fitness(Res) ->
     ALen = length(Avoids),
     Captures = [Y || {X, Y} <- Res, X =:= capture],
     CLen = length(Captures),
-    Avs = lists:sum(Avoids),
-    Capts = lists:sum(Captures),
+    Avs = lists:sum(Avoids)/ALen,
+    Capts = lists:sum(Captures)/CLen,
 %    io:format("~p -- ~p~n", [Avs, Capts]),
-    Capts + Avs.
+    Capts * Avs * 100.
 
 gen_fit(G) ->
     Res = simulate_run(G),
@@ -123,7 +124,8 @@ actuate(Ets) ->
     [{c, _, #vstate{o = C}}] = ets:lookup(Ets, c),
     [{d, _, #vstate{o = D}}] = ets:lookup(Ets, d),
     [{tpos, OldPos}] = ets:lookup(Ets, tpos),
-    Delta = abs(clamp(round(5*(D-C)), -4, 4)),
+    Delta = abs(clamp(round((?TRACKER_MAX_SPEED + 1)*(D-C)),
+                      -?TRACKER_MAX_SPEED, ?TRACKER_MAX_SPEED)),
     [{delta, X}] = ets:lookup(Ets, delta),
     ets:insert(Ets, {delta, X + Delta}),
     RawPos = OldPos + clamp(round(5*(D-C)), -4, 4),
