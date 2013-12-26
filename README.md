@@ -1,6 +1,11 @@
 # genetica
 
-Evolutionary Algorithm(s) in Erlang
+Evolutionary Algorithm(s) in Erlang.
+
+genetica is a finished project, but is neither idiomatic nor efficient: It was
+designed for learning both Erlang and subsymbolic AI. Considering its current
+state, you should not use this project for anything — It is just here so that I
+can be nostalgic in the future.
 
 ## How to add in new problems to solve
 
